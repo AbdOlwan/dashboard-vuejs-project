@@ -31,20 +31,22 @@
           </router-link>
         </nav>
 
-        <!-- User Section -->
-        <div class="sidebar-footer">
-          <div class="user-info">
-            <div class="user-avatar">
-              <User class="icon" />
-            </div>
-            <div v-if="sidebarOpen" class="user-details">
-              <p class="user-name">{{ user?.username || 'Admin' }}</p>
-              <button @click="handleLogout" class="logout-btn">
-                تسجيل خروج
-              </button>
-            </div>
-          </div>
-        </div>
+<!-- User Section -->
+<div class="sidebar-footer">
+  <div class="user-info">
+    <router-link to="/profile" class="user-avatar">
+      <User class="icon" />
+    </router-link>
+    <div v-if="sidebarOpen" class="user-details">
+      <router-link to="/profile" class="user-name">
+        {{ user?.username || 'Admin' }}
+      </router-link>
+      <button @click="handleLogout" class="logout-btn">
+        تسجيل خروج
+      </button>
+    </div>
+  </div>
+</div>
       </div>
     </aside>
 
@@ -372,5 +374,32 @@ const handleLogout = () => {
 
 .sidebar-nav::-webkit-scrollbar-thumb:hover {
   background: #adb5bd;
+}
+
+.user-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #212529;
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: none;
+  display: block;
+  transition: color 0.2s;
+}
+
+.user-name:hover {
+  color: #667eea;
+}
+
+.user-avatar {
+  cursor: pointer;
+  transition: transform 0.2s;
+  text-decoration: none;
+}
+
+.user-avatar:hover {
+  transform: scale(1.05);
 }
 </style>

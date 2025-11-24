@@ -1,59 +1,124 @@
 // src/stores/auth.js
 import { defineStore } from 'pinia';
 import axios from '@/plugins/axios';
-import router from '@/router'; // سنحتاجه للتوجيه بعد الدخول
+import authService from '@/services/authService';
+import router from '@/router';
 
 export const useAuthStore = defineStore('auth', {
-    state: () => ({
-        user: JSON.parse(localStorage.getItem('user')) || null, // حفظ بيانات المستخدم لتبقى بعد التحديث
-        token: localStorage.getItem('auth_token') || null,
-    }),
-    getters: {
-        isAuthenticated: (state) => !!state.token,
-    },
-    actions: {
-        async login(credentials) {
-            try {
-                // Post request to /auth/login based on AuthController.cs
-                const response = await axios.post('/Auth/login', credentials);
+  state: () => ({
+    user: JSON.parse(localStorage.getItem('user')) || null,
+    token: localStorage.getItem('auth_token') || null,
+  }),
 
-                // The response structure based on BaseApiController is ApiResponse<T>
-                // response.data.data contains the AdminUserLoginResponseDto
-// استخراج البيانات بشكل آمن يعمل مع أي هيكل
-const data = response.data?.data || response.data;
+  getters: {
+    isAuthenticated: (state) => !!state.token,
+    currentUser: (state) => state.user,
+  },
 
-if (!data?.token) {
-    throw new Error('لم يتم استلام token من الخادم');
-}
+  actions: {
+    /**
+     * تسجيل الدخول
+     */
+    async login(credentials) {
+      try {
+        const response = await authService.login(credentials);
+        const data = response.data || response;
 
-const { token, username, email, id } = data;
-
-                // Update State
-                this.token = token;
-                this.user = { id, username, email };
-
-                // Save to LocalStorage
-                localStorage.setItem('auth_token', token);
-                localStorage.setItem('user', JSON.stringify(this.user));
-
-                // Set Axios Header
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-                // Redirect to Dashboard
-                router.push('/');
-
-                return true;
-            } catch (error) {
-                console.error('Login failed:', error);
-                throw error; // نمرر الخطأ للـ Component ليعرض رسالة
-            }
-        },
-        logout() {
-            this.token = null;
-            this.user = null;
-            localStorage.removeItem('auth_token');
-            localStorage.removeItem('user');
-            router.push('/login');
+        if (!data?.token) {
+          throw new Error('لم يتم استلام token من الخادم');
         }
+
+        const { token, username, email, id } = data;
+
+        this.token = token;
+        this.user = { id, username, email };
+
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('user', JSON.stringify(this.user));
+
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+        router.push('/');
+        return true;
+      } catch (error) {
+        console.error('Login failed:', error);
+        throw error;
+      }
+    },
+
+    /**
+     * تسجيل مستخدم جديد
+     */
+    async register(userData) {
+      try {
+        const response = await authService.register(userData);
+        return response;
+      } catch (error) {
+        console.error('Registration failed:', error);
+        throw error;
+      }
+    },
+
+    /**
+     * تغيير كلمة المرور
+     */
+    async changePassword(passwordData) {
+      try {
+        await authService.changePassword(passwordData);
+        return true;
+      } catch (error) {
+        console.error('Change password failed:', error);
+        throw error;
+      }
+    },
+
+    /**
+     * تحديث بيانات المستخدم الحالي
+     */
+    async updateProfile(userData) {
+      try {
+        const response = await authService.updateCurrentUser(userData);
+        const data = response.data || response;
+
+        // تحديث البيانات المحلية
+        this.user = { ...this.user, ...data };
+        localStorage.setItem('user', JSON.stringify(this.user));
+
+        return data;
+      } catch (error) {
+        console.error('Update profile failed:', error);
+        throw error;
+      }
+    },
+
+    /**
+     * جلب بيانات المستخدم الحالي
+     */
+    async fetchCurrentUser() {
+      try {
+        const response = await authService.getCurrentUser();
+        const data = response.data || response;
+
+        this.user = data;
+        localStorage.setItem('user', JSON.stringify(this.user));
+
+        return data;
+      } catch (error) {
+        console.error('Fetch user failed:', error);
+        throw error;
+      }
+    },
+
+    /**
+     * تسجيل الخروج
+     */
+    logout() {
+      this.token = null;
+      this.user = null;
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user');
+      delete axios.defaults.headers.common['Authorization'];
+      router.push('/login');
     }
+  }
 });

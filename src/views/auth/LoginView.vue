@@ -42,6 +42,9 @@
             />
             <span>تذكرني</span>
           </label>
+          <div class="register-link">
+  <p>ليس لديك حساب؟ <router-link to="/register">إنشاء حساب جديد</router-link></p>
+</div>
         </div>
 
         <button type="submit" :disabled="isLoading" class="login-btn">
@@ -208,5 +211,22 @@ const handleLogin = async () => {
 .login-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.register-link {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.register-link a {
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.register-link a:hover {
+  text-decoration: underline;
 }
 </style>

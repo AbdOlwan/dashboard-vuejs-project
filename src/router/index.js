@@ -1,6 +1,8 @@
 // src/router/index.js
 import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '@/stores/auth';
+const Register = () => import('@/views/auth/RegisterView.vue');
+const Profile = () => import('@/views/profile/ProfileView.vue');
 
 // Lazy loading for better performance
 const Login = () => import('@/views/auth/LoginView.vue');
@@ -70,6 +72,23 @@ const router = createRouter({
         title: 'تسجيل الدخول'
       }
     },
+    {
+  path: '/register',
+  name: 'Register',
+  component: Register,
+  meta: {
+    guestOnly: true,
+    title: 'تسجيل حساب جديد'
+  }
+},{
+  path: '/profile',
+  name: 'Profile',
+  component: Profile,
+  meta: {
+    title: 'الملف الشخصي',
+    icon: 'User'
+  }
+},
 
     // Dashboard Routes
     {
