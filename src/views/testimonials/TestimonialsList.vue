@@ -56,13 +56,14 @@
       <div v-if="filteredTestimonials.length > 0" class="testimonials-grid">
         <div v-for="item in filteredTestimonials" :key="item.id" class="testimonial-card">
           <div class="card-header">
-<img
-  v-if="item.clientImageUrl"
-  :src="item.clientImageUrl"
-  alt="Client"
-  class="client-avatar"
-  @error="(e) => { e.target.onerror = null; e.target.style.display = 'none'; item.clientImageUrl = null; }"
-/>
+            <img
+              v-if="isValidImage(item.clientImageUrl)"
+              :src="item.clientImageUrl"
+              alt="Client"
+              class="client-avatar"
+              @error="(e) => { e.target.onerror = null; e.target.style.display = 'none'; item.clientImageUrl = null; }"
+            />
+
             <div v-else class="client-avatar-placeholder">
               {{ item.clientName ? item.clientName.charAt(0).toUpperCase() : 'U' }}
             </div>
@@ -177,12 +178,19 @@ const truncateText = (text) => {
   return text.length > 100 ? text.substring(0, 100) + '...' : text;
 };
 
-// ✅ فقط الدوال المتغيرة في script
+// ✅ دالة جديدة للتحقق من صحة الصورة ومنع روابط localhost
+const isValidImage = (url) => {
+  if (!url) return false;
+  // منع عرض الصور إذا كانت تشير إلى السيرفر المحلي أثناء التشغيل على Netlify
+  if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    return false;
+  }
+  return true;
+};
 
 const handleApprove = async (id) => {
   if (confirm('هل أنت متأكد من الموافقة على هذا الرأي ونشره؟')) {
     const result = await testimonialsStore.approveTestimonial(id);
-    // ✅ إذا كان null يعني Guest (تم حظره)
     if (result === null) return;
   }
 };
@@ -190,13 +198,13 @@ const handleApprove = async (id) => {
 const handleDelete = async (id) => {
   if (confirm('هل أنت متأكد من حذف هذا الرأي نهائياً؟')) {
     const result = await testimonialsStore.deleteTestimonial(id);
-    // ✅ إذا كان null يعني Guest (تم حظره)
     if (result === null) return;
   }
 };
 </script>
 
 <style scoped>
+/* نفس الستايل السابق تماماً */
 .testimonials-container {
   max-width: 1200px;
   margin: 0 auto;
