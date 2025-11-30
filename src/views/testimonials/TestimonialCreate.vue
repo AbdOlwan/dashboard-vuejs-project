@@ -72,9 +72,21 @@
               v-model="formData.clientImageUrl"
               type="url"
               class="form-input"
+              :class="{ 'border-red-500': urlError }"
               placeholder="https://example.com/image.jpg"
               dir="ltr"
+              @input="validateUrl"
             />
+            <span v-if="urlError" class="error-text">{{ urlError }}</span>
+
+            <div v-if="formData.clientImageUrl && !urlError" class="image-preview">
+              <p class="preview-label">معاينة:</p>
+              <img
+                :src="formData.clientImageUrl"
+                @error="handleImageError"
+                alt="preview"
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -135,7 +147,7 @@
       </div>
 
       <div class="form-actions">
-        <button type="submit" :disabled="loading" class="submit-btn">
+        <button type="submit" :disabled="loading || urlError" class="submit-btn">
           <span v-if="!loading">حفظ الرأي</span>
           <div v-else class="spinner"></div>
         </button>
@@ -153,8 +165,8 @@ import { useTestimonialsStore } from '@/stores/testimonials';
 const router = useRouter();
 const testimonialsStore = useTestimonialsStore();
 const loading = ref(false);
+const urlError = ref(null);
 
-// Matching TestimonialCreateDto from backend
 const formData = reactive({
   clientName: '',
   clientPosition: '',
@@ -165,20 +177,40 @@ const formData = reactive({
   displayOrder: 0
 });
 
-// ✅ فقط الجزء المتغير في handleSubmit
+// ✅ التحقق من صحة الرابط
+const validateUrl = () => {
+  const url = formData.clientImageUrl;
+  if (!url) {
+    urlError.value = null;
+    return;
+  }
+
+  // منع الروابط المحلية
+  if (url.includes('localhost') || url.includes('127.0.0.1')) {
+    urlError.value = '⛔ لا يمكن استخدام روابط محلية (Localhost) في بيئة الإنتاج';
+    return;
+  }
+
+  urlError.value = null;
+};
+
+// ✅ التعامل مع خطأ تحميل الصورة في المعاينة
+const handleImageError = () => {
+  urlError.value = '⚠️ الرابط لا يؤدي إلى صورة صالحة';
+};
 
 const handleSubmit = async () => {
+  if (urlError.value) return;
+
   loading.value = true;
   try {
     const result = await testimonialsStore.createTestimonial(formData);
 
-    // ✅ إذا كان null يعني Guest حاول الإضافة (تم حظره)
     if (result === null) {
-      // لا تفعل شيئاً، handleGuestAction عرض الرسالة بالفعل
+      // Guest blocked
       return;
     }
 
-    // ✅ نجح الإنشاء، انتقل للقائمة
     router.push('/testimonials');
   } catch (error) {
     console.error('Error creating testimonial:', error);
@@ -190,174 +222,54 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-/* Reusing the same design system */
-.create-container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 20px;
-}
-
-.header-section {
-  background: white;
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 24px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.back-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  color: #6b7280;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-}
+/* Reusing the design system */
+.create-container { max-width: 900px; margin: 0 auto; padding: 20px; }
+.header-section { background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 16px; }
+.back-btn { display: inline-flex; align-items: center; gap: 6px; color: #6b7280; font-size: 14px; font-weight: 600; text-decoration: none; }
 .back-btn:hover { color: #111827; }
-.back-btn svg { width: 16px; height: 16px; }
-
-.header-content {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.icon-wrapper {
-  width: 56px;
-  height: 56px;
-  background: linear-gradient(135deg, #FFC371 0%, #FF5F6D 100%);
-  border-radius: 14px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
+.header-content { display: flex; align-items: center; gap: 16px; }
+.icon-wrapper { width: 56px; height: 56px; background: linear-gradient(135deg, #FFC371 0%, #FF5F6D 100%); border-radius: 14px; display: flex; align-items: center; justify-content: center; color: white; }
 .icon-wrapper svg { width: 28px; height: 28px; }
-
 .page-title { font-size: 24px; font-weight: 700; color: #111827; }
 .page-subtitle { font-size: 14px; color: #6b7280; }
-
 .form-container { display: flex; flex-direction: column; gap: 24px; }
-
-.form-section {
-  background: white;
-  border-radius: 16px;
-  padding: 28px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-
-.section-header {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding-bottom: 16px;
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.section-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-}
-
+.form-section { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.section-header { display: flex; gap: 16px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 1px solid #f3f4f6; }
+.section-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; }
 .section-icon.blue { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
 .section-icon.gold { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
 .section-icon svg { width: 24px; height: 24px; }
-
 .section-title { font-size: 18px; font-weight: 700; color: #1f2937; }
 .section-subtitle { font-size: 13px; color: #6b7280; }
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-}
-
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
 .form-group { display: flex; flex-direction: column; gap: 8px; }
 .mb-6 { margin-bottom: 24px; }
 .mt-4 { margin-top: 16px; }
-
 .form-label { font-weight: 600; font-size: 14px; color: #374151; }
 .form-label.required::after { content: " *"; color: #ef4444; }
 
-.form-input {
-  padding: 12px;
-  border: 2px solid #e5e7eb;
-  border-radius: 10px;
-  font-size: 14px;
-  transition: border-color 0.2s;
-}
+.form-input { padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; transition: border-color 0.2s; }
+.form-input:focus { outline: none; border-color: #FF5F6D; }
+.border-red-500 { border-color: #ef4444 !important; }
+.error-text { font-size: 12px; color: #ef4444; margin-top: 4px; }
 
-.form-input:focus {
-  outline: none;
-  border-color: #FF5F6D;
-}
+/* Image Preview */
+.image-preview { margin-top: 8px; display: flex; align-items: center; gap: 10px; padding: 8px; background: #f9fafb; border-radius: 8px; }
+.preview-label { font-size: 12px; color: #6b7280; }
+.image-preview img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
 .form-hint { font-size: 12px; color: #9ca3af; }
-
-/* Rating Input */
 .rating-input { display: flex; align-items: center; gap: 4px; }
-.star-btn {
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 2px;
-  color: #d1d5db;
-  transition: transform 0.1s;
-}
+.star-btn { background: none; border: none; cursor: pointer; padding: 2px; color: #d1d5db; transition: transform 0.1s; }
 .star-btn svg { width: 32px; height: 32px; }
 .star-btn.active { color: #fbbf24; }
 .star-btn:hover { transform: scale(1.1); }
 .rating-text { margin-right: 8px; font-weight: 600; color: #6b7280; }
-
-/* Actions */
 .form-actions { display: flex; gap: 12px; padding-top: 12px; }
-
-.submit-btn {
-  flex: 1;
-  background: linear-gradient(135deg, #FFC371 0%, #FF5F6D 100%);
-  color: white;
-  padding: 14px;
-  border: none;
-  border-radius: 10px;
-  font-weight: 600;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-}
+.submit-btn { flex: 1; background: linear-gradient(135deg, #FFC371 0%, #FF5F6D 100%); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; }
 .submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-
-.cancel-btn {
-  padding: 14px 32px;
-  background: white;
-  border: 2px solid #e5e7eb;
-  color: #6b7280;
-  border-radius: 10px;
-  font-weight: 600;
-  text-decoration: none;
-  display: flex;
-  align-items: center;
-}
+.cancel-btn { padding: 14px 32px; background: white; border: 2px solid #e5e7eb; color: #6b7280; border-radius: 10px; font-weight: 600; text-decoration: none; display: flex; align-items: center; }
 .cancel-btn:hover { background: #f9fafb; color: #374151; }
-
-.spinner {
-  width: 20px; height: 20px;
-  border: 3px solid rgba(255,255,255,0.3);
-  border-top-color: white;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-}
-
-@media (max-width: 768px) {
-  .form-grid { grid-template-columns: 1fr; }
-}
+.spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
 </style>
