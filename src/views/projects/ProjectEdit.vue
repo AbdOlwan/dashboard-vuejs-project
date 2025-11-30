@@ -48,6 +48,8 @@
               required
               class="form-input"
               placeholder="مثال: نظام إدارة المحتوى"
+              :readonly="isViewOnly"
+              :disabled="isViewOnly"
             />
           </div>
 
@@ -59,6 +61,8 @@
               rows="2"
               class="form-textarea"
               placeholder="اكتب وصفاً مختصراً للمشروع..."
+              :readonly="isViewOnly"
+              :disabled="isViewOnly"
             ></textarea>
           </div>
 
@@ -70,6 +74,8 @@
               rows="5"
               class="form-textarea"
               placeholder="اكتب وصفاً تفصيلياً للمشروع..."
+              :readonly="isViewOnly"
+              :disabled="isViewOnly"
             ></textarea>
           </div>
         </div>
@@ -91,7 +97,7 @@
         <div class="form-grid">
           <div class="form-group">
             <label class="form-label required">نوع المشروع</label>
-            <select v-model="formData.ProjectType" required class="form-select">
+            <select v-model="formData.ProjectType" required class="form-select" :disabled="isViewOnly">
               <option value="">اختر نوع المشروع</option>
               <option value="Web">موقع ويب</option>
               <option value="Mobile">تطبيق موبايل</option>
@@ -109,6 +115,8 @@
               min="0"
               class="form-input"
               placeholder="0"
+              :readonly="isViewOnly"
+              :disabled="isViewOnly"
             />
           </div>
 
@@ -129,6 +137,7 @@
                   type="checkbox"
                   :value="tech.id"
                   v-model="formData.TechnologyIds"
+                  :disabled="isViewOnly"
                 />
                 <span class="checkbox-custom"></span>
                 <span class="checkbox-text">{{ tech.name }} ({{ tech.category }})</span>
@@ -163,6 +172,8 @@
               required
               class="form-input"
               dir="ltr"
+              :readonly="isViewOnly"
+              :disabled="isViewOnly"
             />
           </div>
 
@@ -177,6 +188,8 @@
                 type="url"
                 class="form-input with-icon"
                 dir="ltr"
+                :readonly="isViewOnly"
+                :disabled="isViewOnly"
               />
             </div>
           </div>
@@ -192,6 +205,8 @@
                 type="url"
                 class="form-input with-icon"
                 dir="ltr"
+                :readonly="isViewOnly"
+                :disabled="isViewOnly"
               />
             </div>
           </div>
@@ -203,6 +218,8 @@
               type="url"
               class="form-input"
               dir="ltr"
+              :readonly="isViewOnly"
+              :disabled="isViewOnly"
             />
           </div>
         </div>
@@ -223,11 +240,11 @@
         <div class="form-grid">
           <div class="form-group">
             <label class="form-label required">تاريخ البدء</label>
-            <input v-model="formData.StartDate" type="date" required class="form-input" />
+            <input v-model="formData.StartDate" type="date" required class="form-input" :readonly="isViewOnly" :disabled="isViewOnly" />
           </div>
           <div class="form-group">
             <label class="form-label">تاريخ الانتهاء</label>
-            <input v-model="formData.EndDate" type="date" class="form-input" />
+            <input v-model="formData.EndDate" type="date" class="form-input" :readonly="isViewOnly" :disabled="isViewOnly" />
           </div>
         </div>
       </div>
@@ -236,63 +253,102 @@
         <div class="section-header">
           <div class="section-icon orange">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20v-2c0-.656-.126-1.283-.356-1.857M9 20H4v-2a3 3 0 015-2.236M9 20v-2a3 3 0 00-5-2.236M12 18V3" />
             </svg>
           </div>
           <div>
-            <h2 class="section-title">الإعدادات</h2>
-            <p class="section-subtitle">حدد خيارات العرض والنشر</p>
+            <h2 class="section-title">معلومات العميل</h2>
+            <p class="section-subtitle">اسم العميل وتقييمه للمشروع</p>
           </div>
         </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">اسم العميل</label>
+            <input
+              v-model="formData.ClientName"
+              type="text"
+              class="form-input"
+              placeholder="مثال: شركة س"
+              :readonly="isViewOnly"
+              :disabled="isViewOnly"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label">تقييم العميل</label>
+            <input
+              v-model.number="formData.Rating"
+              type="number"
+              min="1"
+              max="5"
+              class="form-input"
+              placeholder="5"
+              :readonly="isViewOnly"
+              :disabled="isViewOnly"
+            />
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label">ملاحظات العميل</label>
+            <input
+              v-model="formData.ClientFeedback"
+              type="text"
+              class="form-input"
+              placeholder="مثال: عمل ممتاز"
+              :readonly="isViewOnly"
+              :disabled="isViewOnly"
+            />
+          </div>
+        </div>
+      </div>
 
-        <div class="settings-grid">
-          <label class="toggle-card">
-            <input v-model="formData.IsFeatured" type="checkbox" class="toggle-input" />
-            <div class="toggle-content">
-              <div class="toggle-icon featured">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-                </svg>
-              </div>
-              <div>
-                <h3 class="toggle-title">مشروع مميز</h3>
-                <p class="toggle-description">سيظهر في قسم المشاريع المميزة</p>
-              </div>
+      <div class="form-section">
+        <div class="section-header">
+          <div class="section-icon red">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+          </div>
+          <div>
+            <h2 class="section-title">إعدادات إضافية</h2>
+            <p class="section-subtitle">حالة المشروع وخيارات العرض</p>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label">حالة المشروع</label>
+            <input
+              v-model="formData.Status"
+              type="text"
+              class="form-input"
+              placeholder="مثال: مكتمل"
+              :readonly="isViewOnly"
+              :disabled="isViewOnly"
+            />
+          </div>
+          <div class="form-group checkbox-group">
+            <label class="form-label">خيارات العرض</label>
+            <div class="checkbox-group-container">
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="formData.IsActive" :disabled="isViewOnly" />
+                <span class="checkbox-custom"></span>
+                <span class="checkbox-text">نشر المشروع (IsActive)</span>
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" v-model="formData.IsFeatured" :disabled="isViewOnly" />
+                <span class="checkbox-custom"></span>
+                <span class="checkbox-text">مشروع مميز (IsFeatured)</span>
+              </label>
             </div>
-            <div class="toggle-switch">
-              <span class="toggle-slider"></span>
-            </div>
-          </label>
-
-          <label class="toggle-card">
-            <input v-model="formData.IsActive" type="checkbox" class="toggle-input" />
-            <div class="toggle-content">
-              <div class="toggle-icon active">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              </div>
-              <div>
-                <h3 class="toggle-title">نشط</h3>
-                <p class="toggle-description">سيكون المشروع مرئياً للزوار</p>
-              </div>
-            </div>
-            <div class="toggle-switch">
-              <span class="toggle-slider"></span>
-            </div>
-          </label>
+          </div>
         </div>
       </div>
 
       <div class="form-actions">
-        <button type="submit" :disabled="loading" class="submit-btn">
-          <svg v-if="!loading" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <button type="submit" :disabled="loading || isViewOnly" class="submit-btn">
+          <svg v-if="!loading && !isViewOnly" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
           </svg>
-          <div v-else class="spinner"></div>
-          {{ loading ? 'جاري حفظ التعديلات...' : 'حفظ التعديلات' }}
+          <div v-else-if="loading" class="spinner"></div>
+          {{ loading ? 'جاري حفظ التعديلات...' : isViewOnly ? 'وضع المشاهدة فقط 👁️' : 'حفظ التعديلات' }}
         </button>
         <router-link to="/projects" class="cancel-btn">
           إلغاء
@@ -303,8 +359,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, onMounted } from 'vue';
+import { ref, reactive, onMounted, computed } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { showViewOnlyMessage } from '@/utils/roleHandler';
 import { storeToRefs } from 'pinia';
 import { useProjectsStore } from '@/stores/projects';
 import { useTechnologiesStore } from '@/stores/technologies';
@@ -316,11 +374,20 @@ const projectsStore = useProjectsStore();
 const technologiesStore = useTechnologiesStore();
 const { success, error } = useNotification();
 
+const authStore = useAuthStore();
+const isGuest = computed(() => authStore.isGuest);
+const isViewOnly = computed(() => isGuest.value || route.query.mode === 'view');
+
 const { technologies, loading: technologiesLoading } = storeToRefs(technologiesStore);
 
 const loading = ref(false);
 const pageLoading = ref(true);
 const projectId = route.params.id;
+
+// ✅ عرض رسالة المشاهدة فقط للـ Guest
+if (isViewOnly.value) {
+  showViewOnlyMessage();
+}
 
 const formData = reactive({
   Title: '',
@@ -336,95 +403,111 @@ const formData = reactive({
   DisplayOrder: 0,
   IsFeatured: false,
   IsActive: true,
-  TechnologyIds: [], // تخزين الـ IDs هنا
+  TechnologyIds: [],
+  ClientName: '',
+  ClientFeedback: '',
+  Rating: null,
+  Status: '',
 });
 
+const loadProjectData = (project) => {
+  console.log('🔍 Loading project data:', project);
+
+  // ✅ معالجة الحقول المختلفة (titleAr أو title)
+  formData.Title = project.title || project.titleAr || '';
+  formData.ShortDescription = project.shortDescription || project.shortDescriptionAr || '';
+  formData.FullDescription = project.fullDescription || project.fullDescriptionAr || '';
+  formData.ProjectType = project.projectType || '';
+  formData.ThumbnailUrl = project.thumbnailUrl || '';
+  formData.GithubUrl = project.githubUrl || '';
+  formData.LiveDemoUrl = project.liveDemoUrl || '';
+  formData.YouTubeVideoUrl = project.youTubeVideoUrl || project.youtubeVideoUrl || '';
+
+  // ✅ معالجة التواريخ
+  if (project.startDate) {
+    formData.StartDate = project.startDate.split('T')[0];
+  }
+  if (project.endDate) {
+    formData.EndDate = project.endDate.split('T')[0];
+  } else {
+    formData.EndDate = null;
+  }
+
+  formData.DisplayOrder = project.displayOrder || 0;
+  formData.IsFeatured = project.isFeatured || false;
+  formData.IsActive = project.isActive !== undefined ? project.isActive : true;
+
+  // ✅ معالجة التقنيات
+  if (project.technologies && Array.isArray(project.technologies)) {
+    formData.TechnologyIds = project.technologies.map(t => t.id || t);
+  } else {
+    formData.TechnologyIds = [];
+  }
+
+  formData.ClientName = project.clientName || '';
+  formData.ClientFeedback = project.clientFeedback || '';
+  formData.Rating = project.rating || null;
+  formData.Status = project.status || '';
+
+  console.log('✅ Form data loaded:', formData);
+};
+
 onMounted(async () => {
+  console.log('📌 ProjectEdit mounted with ID:', projectId);
   pageLoading.value = true;
+
   try {
     // 1. تحميل التقنيات أولاً
     await technologiesStore.fetchTechnologies();
+    console.log('✅ Technologies loaded:', technologies.value.length);
 
-    // 2. تحميل المشروع
+    // 2. تحميل بيانات المشروع
+    console.log('🔄 Fetching project by ID:', projectId);
     const project = await projectsStore.fetchProjectById(projectId);
 
-    if (project) {
-      // تعيين القيم البسيطة (مع مراعاة حساسية الأحرف في الـ API)
-      // عادة ما يعيد الـ C# API الحقول بـ camelCase (مثل title, shortDescription)
-      // لذلك نحتاج لتعيينها يدوياً إذا كانت الـ API تعيد camelCase
-      formData.Title = project.title || project.Title;
-      formData.ShortDescription = project.shortDescription || project.ShortDescription;
-      formData.FullDescription = project.fullDescription || project.FullDescription;
-      formData.ProjectType = project.projectType || project.ProjectType;
-      formData.ThumbnailUrl = project.thumbnailUrl || project.ThumbnailUrl;
-      formData.GithubUrl = project.githubUrl || project.GithubUrl;
-      formData.LiveDemoUrl = project.liveDemoUrl || project.LiveDemoUrl;
-      formData.YouTubeVideoUrl = project.youTubeVideoUrl || project.YouTubeVideoUrl;
-
-      // معالجة التواريخ لتظهر في الـ Input
-      formData.StartDate = project.startDate ? project.startDate.split('T')[0] : '';
-      formData.EndDate = project.endDate ? project.endDate.split('T')[0] : null;
-
-      formData.DisplayOrder = project.displayOrder || 0;
-      formData.IsFeatured = project.isFeatured;
-      formData.IsActive = project.isActive;
-
-      // 3. تعيين التقنيات (مهم جداً)
-      // المشروع القادم من الـ API يحتوي على مصفوفة technologies (كائنات كاملة)
-      // نحن نحتاج فقط الـ IDs لربطها مع الـ Checkboxes
-// 3. تعيين التقنيات (مهم جداً)
-if (project.technologies && Array.isArray(project.technologies)) {
-
-
-  // ✅ الكود الجديد (الحل):
-  formData.TechnologyIds = project.technologies
-    .filter(t => t !== null && t !== undefined) // نتأكد أن العنصر ليس فارغاً
-    .map(t => t.id);
-}
-    } else {
-      error('لم يتم العثور على المشروع');
-      router.push('/projects');
+    if (!project) {
+      throw new Error('المشروع غير موجود');
     }
+
+    console.log('✅ Project fetched successfully:', project);
+    loadProjectData(project);
+
   } catch (err) {
-    error('حدث خطأ أثناء تحميل بيانات المشروع');
-    console.error(err);
+    console.error('❌ Error loading project:', err);
+    error(err.message || 'فشل في تحميل بيانات المشروع.');
     router.push('/projects');
   } finally {
     pageLoading.value = false;
   }
 });
 
+
+
 const handleSubmit = async () => {
   loading.value = true;
+
   try {
-    // التأكد من التاريخ الفارغ
-    if (formData.EndDate === '') formData.EndDate = null;
+    // تنظيف التاريخ الفارغ
+    if (formData.EndDate === '') {
+      formData.EndDate = null;
+    }
 
-    // تجهيز البيانات للإرسال
-    // نرسل فقط الحقول التي يتوقعها الـ Update DTO
-    const payload = {
-      Title: formData.Title,
-      ShortDescription: formData.ShortDescription,
-      FullDescription: formData.FullDescription,
-      ProjectType: formData.ProjectType,
-      ThumbnailUrl: formData.ThumbnailUrl,
-      GithubUrl: formData.GithubUrl,
-      LiveDemoUrl: formData.LiveDemoUrl,
-      YouTubeVideoUrl: formData.YouTubeVideoUrl,
-      StartDate: formData.StartDate,
-      EndDate: formData.EndDate,
-      IsFeatured: formData.IsFeatured,
-      IsActive: formData.IsActive,
-      DisplayOrder: formData.DisplayOrder,
-      TechnologyIds: formData.TechnologyIds
-    };
+    console.log('📤 Submitting project update:', formData);
 
-    await projectsStore.updateProject(projectId, payload);
-    success('تم تحديث المشروع بنجاح');
+    await projectsStore.updateProject(projectId, formData);
+    success('تم تحديث المشروع بنجاح!');
     router.push('/projects');
+
   } catch (err) {
-    error('حدث خطأ أثناء تحديث المشروع');
-    console.error(err);
+    console.error('❌ Error updating project:', err);
+
+    // ✅ لا نعرض رسالة خطأ إذا كان Guest
+    if (err.message === 'GUEST_ACTION_BLOCKED') {
+      console.log('🚫 Guest action blocked - no error message shown');
+    } else {
+      // ✅ نعرض رسالة خطأ فقط للأخطاء الحقيقية
+      error(err.message || 'فشل في تحديث المشروع.');
+    }
   } finally {
     loading.value = false;
   }
@@ -432,80 +515,429 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-/* نفس الستايلات الموجودة في ProjectCreate.vue تماماً */
-.create-container { max-width: 900px; margin: 0 auto; padding: 20px; }
-.header-section { background: white; border-radius: 16px; padding: 24px 28px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; }
-.back-btn { display: inline-flex; align-items: center; gap: 6px; color: #6b7280; font-size: 14px; font-weight: 600; text-decoration: none; margin-bottom: 20px; transition: all 0.2s; }
-.back-btn:hover { color: #1f2937; gap: 8px; }
-.back-btn svg { width: 18px; height: 18px; }
-.header-content { display: flex; align-items: center; gap: 16px; }
-.icon-wrapper { width: 56px; height: 56px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.icon-wrapper.edit-icon { background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); }
-.icon-wrapper svg { width: 28px; height: 28px; color: white; stroke-width: 2; }
-.page-title { font-size: 24px; font-weight: 700; color: #1f2937; margin-bottom: 4px; }
-.page-subtitle { font-size: 14px; color: #6b7280; }
-.form-loading-state { background: white; border-radius: 16px; padding: 80px 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; text-align: center; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; color: #6b7280; font-size: 16px; }
-.form-loading-state .spinner { width: 40px; height: 40px; border: 4px solid #f3f4f6; border-top-color: #667eea; border-radius: 50%; animation: spin 1s linear infinite; }
-.form-container { display: flex; flex-direction: column; gap: 24px; }
-.form-section { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; }
-.section-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #f3f4f6; }
-.section-icon { width: 48px; height: 48px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.section-icon.blue { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.section-icon.purple { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
-.section-icon.green { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-.section-icon.orange { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
-.section-icon svg { width: 24px; height: 24px; color: white; stroke-width: 2; }
-.section-title { font-size: 18px; font-weight: 700; color: #1f2937; margin-bottom: 4px; }
-.section-subtitle { font-size: 13px; color: #6b7280; }
-.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; }
-.form-group { display: flex; flex-direction: column; }
-.form-group.full-width { grid-column: 1 / -1; }
-.form-label { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px; display: flex; align-items: center; gap: 4px; }
-.form-label.required::after { content: '*'; color: #ef4444; font-size: 16px; }
-.form-input, .form-select, .form-textarea { width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; transition: all 0.2s; background: white; }
-.form-input:focus, .form-select:focus, .form-textarea:focus { outline: none; border-color: #667eea; box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1); }
-.form-textarea { resize: vertical; min-height: 100px; font-family: inherit; }
-.form-hint { font-size: 12px; color: #9ca3af; margin-top: 6px; }
-.input-with-icon { position: relative; }
-.input-with-icon svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; color: #9ca3af; }
-.form-input.with-icon { padding-left: 48px; }
-.settings-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; }
-.toggle-card { display: flex; align-items: center; justify-content: space-between; padding: 20px; background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
-.toggle-card:hover { background: #f3f4f6; border-color: #d1d5db; }
-.toggle-input { display: none; }
-.toggle-input:checked + .toggle-content + .toggle-switch .toggle-slider { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-.toggle-input:checked + .toggle-content + .toggle-switch .toggle-slider::before { transform: translateX(24px); }
-.toggle-content { display: flex; align-items: center; gap: 12px; flex: 1; }
-.toggle-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.toggle-icon.featured { background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%); }
-.toggle-icon.active { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-.toggle-icon svg { width: 20px; height: 20px; color: white; }
-.toggle-title { font-size: 14px; font-weight: 600; color: #1f2937; margin-bottom: 2px; }
-.toggle-description { font-size: 12px; color: #6b7280; }
-.toggle-switch { width: 52px; height: 28px; background: #d1d5db; border-radius: 14px; position: relative; transition: all 0.3s; }
-.toggle-slider { position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; background: white; border-radius: 50%; transition: all 0.3s; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); }
-.toggle-slider::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: white; transition: transform 0.3s; }
-.form-actions { display: flex; gap: 12px; padding-top: 8px; }
-.submit-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 24px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3); }
-.submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4); }
-.submit-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-.submit-btn svg { width: 20px; height: 20px; }
-.submit-btn .spinner { width: 20px; height: 20px; border: 3px solid rgba(255, 255, 255, 0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
-@keyframes spin { to { transform: rotate(360deg); } }
-.cancel-btn { padding: 14px 32px; border: 2px solid #e5e7eb; background: white; color: #6b7280; border-radius: 10px; font-size: 16px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
-.cancel-btn:hover { background: #f9fafb; border-color: #d1d5db; color: #374151; }
+.create-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 20px;
+}
 
-/* أنماط الـ Checkbox والتحميل */
-.tech-loading-state { display: flex; align-items: center; gap: 10px; padding: 20px; background: #f9fafb; border-radius: 10px; color: #6b7280; }
-.tech-loading-spinner { width: 20px; height: 20px; border: 3px solid #e5e7eb; border-top-color: #667eea; border-radius: 50%; animation: spin 0.8s linear infinite; }
-.checkbox-group-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; background: #f9fafb; border: 2px solid #e5e7eb; padding: 16px; border-radius: 10px; max-height: 250px; overflow-y: auto; }
-.checkbox-label { display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 8px; cursor: pointer; transition: all 0.2s; user-select: none; }
-.checkbox-label:hover { background: #f3f4f6; }
-.checkbox-label input[type="checkbox"] { display: none; }
-.checkbox-custom { width: 20px; height: 20px; border: 2px solid #d1d5db; border-radius: 6px; background: white; transition: all 0.2s; flex-shrink: 0; position: relative; }
-.checkbox-custom::after { content: ''; position: absolute; top: 2px; left: 6px; width: 5px; height: 10px; border: solid white; border-width: 0 2px 2px 0; transform: rotate(45deg) scale(0); transition: all 0.2s; }
-.checkbox-label input[type="checkbox"]:checked + .checkbox-custom { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-color: #667eea; }
-.checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after { transform: rotate(45deg) scale(1); }
-.checkbox-text { font-size: 14px; font-weight: 500; color: #374151; }
-@media (max-width: 768px) { .create-container { padding: 16px; } .header-content { flex-direction: column; text-align: center; } .form-section { padding: 20px; } .section-header { flex-direction: column; text-align: center; } .form-grid { grid-template-columns: 1fr; } .settings-grid { grid-template-columns: 1fr; } .form-actions { flex-direction: column; } }
+.header-section {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #667eea;
+  text-decoration: none;
+  font-weight: 600;
+  transition: color 0.2s;
+}
+
+.back-btn:hover {
+  color: #5a67d8;
+}
+
+.back-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.header-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.icon-wrapper {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.edit-icon {
+  background: linear-gradient(135deg, #f6ad55 0%, #ed8936 100%);
+}
+
+.icon-wrapper svg {
+  width: 24px;
+  height: 24px;
+  color: white;
+  stroke-width: 2;
+}
+
+.page-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 2px;
+}
+
+.page-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.form-loading-state {
+  text-align: center;
+  padding: 50px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.form-loading-state p {
+  margin-top: 10px;
+  color: #6b7280;
+}
+
+.form-container {
+  display: flex;
+  flex-direction: column;
+  gap: 25px;
+}
+
+.form-section {
+  background: white;
+  border-radius: 16px;
+  padding: 30px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.section-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.section-icon.blue {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.section-icon.purple {
+  background: linear-gradient(135deg, #9333ea 0%, #a855f7 100%);
+}
+
+.section-icon.green {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+}
+
+.section-icon.orange {
+  background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+}
+
+.section-icon.red {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+}
+
+.section-icon svg {
+  width: 20px;
+  height: 20px;
+  color: white;
+  stroke-width: 2;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1f2937;
+}
+
+.section-subtitle {
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.form-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 8px;
+}
+
+.form-label.required::after {
+  content: '*';
+  color: #ef4444;
+  margin-right: 4px;
+}
+
+.form-input,
+.form-textarea,
+.form-select {
+  padding: 10px 15px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f2937;
+  transition: all 0.2s;
+  background: white;
+}
+
+.form-input:focus,
+.form-textarea:focus,
+.form-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-textarea {
+  resize: vertical;
+}
+
+.form-input:disabled,
+.form-textarea:disabled,
+.form-select:disabled,
+.form-input[readonly],
+.form-textarea[readonly] {
+  background-color: #f9fafb;
+  cursor: not-allowed;
+  color: #9ca3af;
+}
+
+.input-with-icon {
+  position: relative;
+}
+
+.input-with-icon svg {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 18px;
+  height: 18px;
+  color: #9ca3af;
+}
+
+.input-with-icon .form-input {
+  padding-right: 40px;
+}
+
+.tech-loading-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.tech-loading-spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #f3f4f6;
+  border-top-color: #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.checkbox-group-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #f9fafb;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  user-select: none;
+  background: white;
+  border: 1px solid #e5e7eb;
+}
+
+.checkbox-label:hover {
+  background: #f3f4f6;
+}
+
+.checkbox-label input[type="checkbox"] {
+  display: none;
+}
+
+.checkbox-custom {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #d1d5db;
+  border-radius: 4px;
+  background: white;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.checkbox-custom::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 5px;
+  width: 4px;
+  height: 8px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: all 0.2s;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: #667eea;
+}
+
+.checkbox-label input[type="checkbox"]:checked + .checkbox-custom::after {
+  transform: rotate(45deg) scale(1);
+}
+
+.checkbox-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.checkbox-label input[type="checkbox"]:disabled + .checkbox-custom {
+  background-color: #e5e7eb;
+  border-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.checkbox-label input[type="checkbox"]:disabled + .checkbox-custom::after {
+  border-color: #9ca3af;
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  padding: 20px 0;
+}
+
+.submit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.submit-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.submit-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+.submit-btn .spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.cancel-btn {
+  display: inline-flex;
+  align-items: center;
+  padding: 12px 24px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  color: #4b5563;
+  background: #f3f4f6;
+  transition: background 0.2s;
+}
+
+.cancel-btn:hover {
+  background: #e5e7eb;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .create-container {
+    padding: 16px;
+  }
+  .header-content {
+    flex-direction: column;
+    text-align: center;
+  }
+  .form-section {
+    padding: 20px;
+  }
+  .section-header {
+    flex-direction: column;
+    text-align: center;
+  }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+  .form-actions {
+    flex-direction: column;
+  }
+}
 </style>

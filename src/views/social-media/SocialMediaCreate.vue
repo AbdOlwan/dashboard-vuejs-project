@@ -41,7 +41,12 @@
         <div class="form-grid">
           <div class="form-group">
             <label class="form-label required">منصة التواصل</label>
-            <select v-model="formData.platform" required class="form-select">
+            <select
+              v-model="formData.platform"
+              required
+              class="form-select"
+              :disabled="authStore.isGuest"
+            >
               <option value="" disabled>اختر المنصة</option>
               <option v-for="p in platforms" :key="p.value" :value="p.value">{{ p.label }}</option>
             </select>
@@ -56,6 +61,7 @@
               class="form-input"
               placeholder="https://linkedin.com/in/username"
               dir="ltr"
+              :disabled="authStore.isGuest"
             />
             <p class="form-hint">يجب أن يكون الرابط كاملاً وصحيحاً</p>
           </div>
@@ -68,6 +74,7 @@
               min="0"
               class="form-input"
               placeholder="0"
+              :disabled="authStore.isGuest"
             />
             <p class="form-hint">الأقل رقماً يظهر أولاً</p>
           </div>
@@ -80,13 +87,15 @@
               class="form-input"
               placeholder="مثال: fab fa-linkedin-in"
               dir="ltr"
+              :disabled="authStore.isGuest"
             />
             <p class="form-hint">إذا تركت فارغاً سيتم استخدام الأيقونة الافتراضية للمنصة</p>
           </div>
         </div>
       </div>
 
-      <div class="form-actions">
+      <!-- ✅ إظهار الأزرار فقط للـ Admin -->
+      <div v-if="authStore.canModify" class="form-actions">
         <button type="submit" :disabled="loading" class="submit-btn">
           <svg v-if="!loading" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -106,7 +115,10 @@
 import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import socialMediaService from '@/services/socialMediaService';
+import { useAuthStore } from '@/stores/auth'; // ✅
+import { handleGuestAction } from '@/utils/roleHandler'; // ✅
 
+const authStore = useAuthStore(); // ✅
 const router = useRouter();
 const loading = ref(false);
 const errorMsg = ref('');
@@ -128,28 +140,24 @@ const formData = reactive({
   displayOrder: 0
 });
 
-// src/views/SocialMediaCreate.vue
-
 const handleSubmit = async () => {
+  // ✅ التحقق من صلاحيات Guest
+  if (handleGuestAction('add')) return;
+
   loading.value = true;
   errorMsg.value = '';
 
   try {
-    // نستخدم نسخة من الكائن لتجنب مشاكل الـ Proxy
     await socialMediaService.create({ ...formData });
     router.push('/social-media');
   } catch (err) {
     console.error('Submit Error:', err);
 
-    // تصحيح: التعامل مع هيكل الخطأ القادم من BaseService
     if (err.errors && Array.isArray(err.errors) && err.errors.length > 0) {
-        // إذا كانت مصفوفة أخطاء
         errorMsg.value = err.errors.join(', ');
     } else if (err.errors && typeof err.errors === 'object') {
-        // إذا كانت كائن (Validation Dictionary)
         errorMsg.value = Object.values(err.errors).flat().join(', ');
     } else {
-        // الرسالة العامة
         errorMsg.value = err.message || 'حدث خطأ أثناء إضافة الرابط.';
     }
   } finally {
@@ -174,7 +182,6 @@ const handleSubmit = async () => {
 .form-section { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; }
 .section-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #f3f4f6; }
 
-/* CSS Fixes for Huge Icon */
 .section-icon {
   width: 48px !important;
   height: 48px !important;
@@ -202,7 +209,8 @@ const handleSubmit = async () => {
 .form-label { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px; }
 .form-label.required::after { content: '*'; color: #ef4444; font-size: 16px; margin-right: 4px; }
 .form-input, .form-select { width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; transition: all 0.2s; background: white; }
-.form-input:focus, .form-select:focus { outline: none; border-color: #43e97b; box-shadow: 0 0 0 3px rgba(67, 233, 123, 0.1); }
+.form-input:disabled, .form-select:disabled { background: #f9fafb; color: #6b7280; cursor: not-allowed; opacity: 0.7; }
+.form-input:focus:not(:disabled), .form-select:focus:not(:disabled) { outline: none; border-color: #43e97b; box-shadow: 0 0 0 3px rgba(67, 233, 123, 0.1); }
 .form-hint { font-size: 12px; color: #9ca3af; margin-top: 6px; }
 .form-actions { display: flex; gap: 12px; padding-top: 8px; }
 .submit-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); color: white; padding: 14px 24px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; box-shadow: 0 4px 12px rgba(67, 233, 123, 0.3); }

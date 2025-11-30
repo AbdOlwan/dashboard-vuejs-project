@@ -220,10 +220,11 @@ onMounted(async () => {
   }
 });
 
+// في SkillEdit.vue
+
 const handleSubmit = async () => {
   loading.value = true;
   try {
-    // ✅ إرسال البيانات بالمسميات الصحيحة (PascalCase) للـ API
     await skillsStore.updateSkill(skillId, {
       Name: formData.name,
       Category: formData.category,
@@ -235,6 +236,11 @@ const handleSubmit = async () => {
     success('تم تحديث المهارة بنجاح');
     router.push('/skills');
   } catch (err) {
+    // ✅ تجاهل الخطأ إذا كان بسبب صلاحيات الزائر
+    if (err.message === 'GUEST_ACTION_BLOCKED') {
+       return;
+    }
+
     const errorMsg = err.response?.data?.message || err.message || 'حدث خطأ أثناء تحديث المهارة';
     error(errorMsg);
     console.error('خطأ في تحديث المهارة:', err);

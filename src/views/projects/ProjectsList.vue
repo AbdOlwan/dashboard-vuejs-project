@@ -1,6 +1,5 @@
 <template>
   <div class="projects-container">
-    <!-- Header Section -->
     <div class="header-section">
       <div class="header-content">
         <div class="title-wrapper">
@@ -22,7 +21,6 @@
         </router-link>
       </div>
 
-      <!-- Search & Filter Bar -->
       <div class="filter-bar">
         <div class="search-wrapper">
           <svg xmlns="http://www.w3.org/2000/svg" class="search-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -50,20 +48,17 @@
       </div>
     </div>
 
-    <!-- Loading State -->
     <div v-if="loading" class="loading-state">
       <div class="loading-spinner"></div>
       <p class="loading-text">جاري تحميل المشاريع...</p>
     </div>
 
-    <!-- Projects Grid -->
     <div v-else-if="filteredProjects.length > 0" class="projects-grid">
       <div
         v-for="project in filteredProjects"
         :key="project.id"
         class="project-card"
       >
-        <!-- Project Image -->
         <div class="project-image">
           <img
             v-if="project.imageUrl"
@@ -77,7 +72,6 @@
             </svg>
           </div>
 
-          <!-- Badges -->
           <div class="badges">
             <span v-if="project.isFeatured" class="badge featured">
               <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24">
@@ -91,7 +85,6 @@
           </div>
         </div>
 
-        <!-- Project Content -->
         <div class="project-content">
           <div class="project-header">
             <h3 class="project-title">{{ project.titleAr }}</h3>
@@ -100,8 +93,7 @@
 
           <p class="project-description">{{ project.descriptionAr }}</p>
 
-          <!-- Technologies -->
-<div v-if="project.technologies && project.technologies.length" class="technologies">
+          <div v-if="project.technologies && project.technologies.length" class="technologies">
             <template v-for="(tech, index) in project.technologies" :key="index">
               <span v-if="tech" class="tech-tag">
                 {{ tech.name || tech }}
@@ -109,7 +101,6 @@
             </template>
           </div>
 
-          <!-- Links -->
           <div v-if="project.projectUrl || project.githubUrl" class="project-links">
             <a v-if="project.projectUrl" :href="project.projectUrl" target="_blank" class="link-btn">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -125,14 +116,16 @@
             </a>
           </div>
 
-          <!-- Actions -->
           <div class="project-actions">
+            <!-- ✅ زر التعديل - سيفتح الصفحة لكن بدون حفظ فعلي للـ Guest -->
             <router-link :to="`/projects/${project.id}/edit`" class="action-btn edit">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
               تعديل
             </router-link>
+
+            <!-- ✅ تبديل التمييز - سيعرض رسالة Guest -->
             <button
               @click="toggleFeatured(project.id)"
               class="action-btn"
@@ -143,6 +136,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
               </svg>
             </button>
+
+            <!-- ✅ تبديل النشاط - سيعرض رسالة Guest -->
             <button
               @click="toggleActive(project.id)"
               class="action-btn"
@@ -154,6 +149,8 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
             </button>
+
+            <!-- ✅ زر الحذف - سيعرض رسالة Guest -->
             <button @click="deleteProject(project.id)" class="action-btn delete">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -164,7 +161,6 @@
       </div>
     </div>
 
-    <!-- Empty State -->
     <div v-else class="empty-state">
       <div class="empty-icon">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -201,8 +197,10 @@ const filteredProjects = computed(() => {
 
   if (searchQuery.value) {
     result = result.filter(p =>
-      p.titleAr.includes(searchQuery.value) ||
-      p.descriptionAr.includes(searchQuery.value)
+      (p.titleAr && p.titleAr.includes(searchQuery.value)) ||
+      (p.descriptionAr && p.descriptionAr.includes(searchQuery.value)) ||
+      (p.title && p.title.includes(searchQuery.value)) ||
+      (p.shortDescription && p.shortDescription.includes(searchQuery.value))
     );
   }
 
@@ -224,13 +222,16 @@ const getProjectType = (type) => {
   return types[type] || type;
 };
 
+// ✅ الدوال ستتعامل مع الصلاحيات داخلياً عبر Store
 const toggleFeatured = async (id) => {
   try {
     await projectsStore.toggleFeatured(id);
     success('تم تحديث حالة التمييز بنجاح');
-  // eslint-disable-next-line no-unused-vars
   } catch (err) {
-    error('حدث خطأ أثناء التحديث');
+    // ✅ لا نعرض رسالة خطأ إذا كان Guest لأن handleGuestAction عرض رسالة جميلة
+    if (err.message !== 'GUEST_ACTION_BLOCKED') {
+      error('حدث خطأ أثناء التحديث');
+    }
   }
 };
 
@@ -238,9 +239,10 @@ const toggleActive = async (id) => {
   try {
     await projectsStore.toggleActive(id);
     success('تم تحديث حالة النشر بنجاح');
-  // eslint-disable-next-line no-unused-vars
   } catch (err) {
-    error('حدث خطأ أثناء التحديث');
+    if (err.message !== 'GUEST_ACTION_BLOCKED') {
+      error('حدث خطأ أثناء التحديث');
+    }
   }
 };
 
@@ -250,9 +252,10 @@ const deleteProject = async (id) => {
   try {
     await projectsStore.deleteProject(id);
     success('تم حذف المشروع بنجاح');
-  // eslint-disable-next-line no-unused-vars
   } catch (err) {
-    error('حدث خطأ أثناء الحذف');
+    if (err.message !== 'GUEST_ACTION_BLOCKED') {
+      error('حدث خطأ أثناء الحذف');
+    }
   }
 };
 

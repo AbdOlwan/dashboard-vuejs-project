@@ -165,10 +165,20 @@ const formData = reactive({
   displayOrder: 0
 });
 
+// ✅ فقط الجزء المتغير في handleSubmit
+
 const handleSubmit = async () => {
   loading.value = true;
   try {
-    await testimonialsStore.createTestimonial(formData);
+    const result = await testimonialsStore.createTestimonial(formData);
+
+    // ✅ إذا كان null يعني Guest حاول الإضافة (تم حظره)
+    if (result === null) {
+      // لا تفعل شيئاً، handleGuestAction عرض الرسالة بالفعل
+      return;
+    }
+
+    // ✅ نجح الإنشاء، انتقل للقائمة
     router.push('/testimonials');
   } catch (error) {
     console.error('Error creating testimonial:', error);

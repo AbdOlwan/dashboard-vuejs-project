@@ -1,6 +1,7 @@
 // src/stores/projects.js
 import { defineStore } from 'pinia';
 import projectsService from '@/services/projectsService';
+import { handleGuestAction } from '@/utils/roleHandler';
 
 export const useProjectsStore = defineStore('projects', {
   state: () => ({
@@ -11,85 +12,88 @@ export const useProjectsStore = defineStore('projects', {
   }),
 
   getters: {
-    // Get featured projects
     featuredProjects: (state) => state.projects.filter(p => p.isFeatured),
-
-    // Get active projects
     activeProjects: (state) => state.projects.filter(p => p.isActive),
-
-    // Get projects by type
     projectsByType: (state) => (type) => {
       return state.projects.filter(p => p.projectType === type);
     },
-
-    // Get project count
     projectsCount: (state) => state.projects.length,
   },
 
   actions: {
-    /**
-     * Fetch all projects
-     */
     async fetchProjects() {
       this.loading = true;
       this.error = null;
       try {
+        console.log('📄 Fetching all projects...');
         this.projects = await projectsService.getAll();
+        console.log('✅ Projects fetched:', this.projects.length);
       } catch (error) {
         this.error = error.message;
-        console.error('Error fetching projects:', error);
+        console.error('❌ Error fetching projects:', error);
       } finally {
         this.loading = false;
       }
     },
 
-    /**
-     * Fetch project by ID
-     */
     async fetchProjectById(id) {
       this.loading = true;
       this.error = null;
       try {
-        this.currentProject = await projectsService.getById(id);
-        return this.currentProject;
+        console.log('📄 Store: Fetching project by ID:', id);
+        const project = await projectsService.getById(id);
+        console.log('✅ Store: Project fetched successfully:', project);
+        this.currentProject = project;
+        return project;
       } catch (error) {
-        this.error = error.message;
-        console.error('Error fetching project:', error);
+        this.error = error.message || 'فشل في تحميل المشروع';
+        console.error('❌ Store: Error fetching project:', error);
         throw error;
       } finally {
         this.loading = false;
       }
     },
 
-    /**
-     * Create new project
-     */
     async createProject(projectData) {
+      // ✅ التحقق من الصلاحية - إذا Guest نعرض رسالة ونتوقف فوراً
+      if (handleGuestAction('add')) {
+        console.log('🚫 Guest tried to create project - BLOCKED');
+        // نرمي خطأ خاص لن نعرضه في UI
+        throw new Error('GUEST_ACTION_BLOCKED');
+      }
+
       this.loading = true;
       this.error = null;
       try {
+        console.log('📤 Creating new project:', projectData);
         const newProject = await projectsService.create(projectData);
+        console.log('✅ Project created:', newProject);
+
         this.projects.push(newProject);
         return newProject;
       } catch (error) {
         this.error = error.message;
-        console.error('Error creating project:', error);
+        console.error('❌ Error creating project:', error);
         throw error;
       } finally {
         this.loading = false;
       }
     },
 
-    /**
-     * Update existing project
-     */
     async updateProject(id, projectData) {
+      // ✅ التحقق من الصلاحية
+      if (handleGuestAction('edit')) {
+        console.log('🚫 Guest tried to update project - BLOCKED');
+        throw new Error('GUEST_ACTION_BLOCKED');
+      }
+
       this.loading = true;
       this.error = null;
       try {
+        console.log('📤 Updating project:', id, projectData);
         const updatedProject = await projectsService.update(id, projectData);
+        console.log('✅ Project updated:', updatedProject);
 
-        // Update in local state
         const index = this.projects.findIndex(p => p.id === id);
         if (index !== -1) {
           this.projects[index] = updatedProject;
@@ -98,89 +102,95 @@ export const useProjectsStore = defineStore('projects', {
         return updatedProject;
       } catch (error) {
         this.error = error.message;
-        console.error('Error updating project:', error);
+        console.error('❌ Error updating project:', error);
         throw error;
       } finally {
         this.loading = false;
       }
     },
 
-    /**
-     * Delete project
-     */
     async deleteProject(id) {
+      // ✅ التحقق من الصلاحية
+      if (handleGuestAction('delete')) {
+        console.log('🚫 Guest tried to delete project - BLOCKED');
+        throw new Error('GUEST_ACTION_BLOCKED');
+      }
+
       this.loading = true;
       this.error = null;
       try {
+        console.log('🗑️ Deleting project:', id);
         await projectsService.delete(id);
+        console.log('✅ Project deleted');
 
-        // Remove from local state
         this.projects = this.projects.filter(p => p.id !== id);
       } catch (error) {
         this.error = error.message;
-        console.error('Error deleting project:', error);
+        console.error('❌ Error deleting project:', error);
         throw error;
       } finally {
         this.loading = false;
       }
     },
 
-    /**
-     * Toggle active status
-     */
     async toggleActive(id) {
+      // ✅ التحقق من الصلاحية
+      if (handleGuestAction('toggle')) {
+        console.log('🚫 Guest tried to toggle active - BLOCKED');
+        throw new Error('GUEST_ACTION_BLOCKED');
+      }
+
       this.loading = true;
       this.error = null;
       try {
+        console.log('🔄 Toggling active status:', id);
         await projectsService.toggleActive(id);
+        console.log('✅ Active status toggled');
 
-        // Update in local state
         const project = this.projects.find(p => p.id === id);
         if (project) {
           project.isActive = !project.isActive;
         }
       } catch (error) {
         this.error = error.message;
-        console.error('Error toggling active:', error);
+        console.error('❌ Error toggling active:', error);
         throw error;
       } finally {
         this.loading = false;
       }
     },
 
-    /**
-     * Toggle featured status
-     */
     async toggleFeatured(id) {
+      // ✅ التحقق من الصلاحية
+      if (handleGuestAction('toggle')) {
+        console.log('🚫 Guest tried to toggle featured - BLOCKED');
+        throw new Error('GUEST_ACTION_BLOCKED');
+      }
+
       this.loading = true;
       this.error = null;
       try {
+        console.log('🔄 Toggling featured status:', id);
         await projectsService.toggleFeatured(id);
+        console.log('✅ Featured status toggled');
 
-        // Update in local state
         const project = this.projects.find(p => p.id === id);
         if (project) {
           project.isFeatured = !project.isFeatured;
         }
       } catch (error) {
         this.error = error.message;
-        console.error('Error toggling featured:', error);
+        console.error('❌ Error toggling featured:', error);
         throw error;
       } finally {
         this.loading = false;
       }
     },
 
-    /**
-     * Clear current project
-     */
     clearCurrentProject() {
       this.currentProject = null;
     },
 
-    /**
-     * Clear error
-     */
     clearError() {
       this.error = null;
     }

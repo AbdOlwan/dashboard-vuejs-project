@@ -1,6 +1,6 @@
 <template>
   <div class="form-wrapper">
-    <div class="form-container">
+    <div v-if="authStore.isAdmin" class="form-container">
       <div class="form-header">
         <div>
           <h2 class="title">إضافة شهادة جديدة</h2>
@@ -60,16 +60,22 @@
         </div>
       </form>
     </div>
+    <div v-else class="form-container">
+       <p style="text-align:center; padding: 20px; color: red;">عذراً، ليس لديك صلاحية الوصول لهذه الصفحة.</p>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { reactive, ref } from 'vue';
+import { reactive, ref, onMounted } from 'vue';
 import { useCertificationsStore } from '@/stores/certifications';
+import { useAuthStore } from '@/stores/auth'; // Import Auth Store
 import { useRouter } from 'vue-router';
 import Swal from 'sweetalert2';
+import { handleGuestAction } from '@/utils/roleHandler';
 
 const store = useCertificationsStore();
+const authStore = useAuthStore();
 const router = useRouter();
 const loading = ref(false);
 
@@ -85,7 +91,20 @@ const form = reactive({
   displayOrder: 0
 });
 
+onMounted(() => {
+  // Security Redirect: If not admin, go back
+  if (!authStore.isAdmin) {
+    Swal.fire('غير مصرح', 'ليس لديك صلاحية للوصول لهذه الصفحة', 'warning');
+    router.push('/certifications');
+  }
+});
+
 const handleSubmit = async () => {
+  // ✅ Check if Guest (prevents unnecessary API call attempt)
+  if (handleGuestAction()) return;
+
+  if (!authStore.isAdmin) return;
+
   loading.value = true;
   try {
     // إرسال البيانات للـ Store
@@ -97,6 +116,9 @@ const handleSubmit = async () => {
     Swal.fire('نجاح', 'تمت إضافة الشهادة بنجاح', 'success');
     router.push('/certifications');
   } catch (error) {
+    // ✅ Silent return if guest action was blocked
+    if (error.message === 'GUEST_ACTION_BLOCKED') return;
+
     Swal.fire('خطأ', error.response?.data?.message || 'حدث خطأ أثناء الحفظ', 'error');
   } finally {
     loading.value = false;
@@ -105,6 +127,7 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
+/* Existing Styles */
 .form-wrapper { padding: 24px; display: flex; justify-content: center; }
 .form-container { width: 100%; max-width: 800px; }
 .form-header { display: flex; justify-content: space-between; margin-bottom: 24px; align-items: center; }

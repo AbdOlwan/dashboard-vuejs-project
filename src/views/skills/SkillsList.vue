@@ -132,14 +132,23 @@ const filteredSkills = computed(() => {
   return result;
 });
 
+// في SkillsList.vue
+
 const deleteSkill = async (id) => {
+  // ✅ فحص سريع قبل الـ confirm لتجنب إزعاج الزائر
+  // (اختياري، لأن الـ Store سيفحص أيضاً، لكن هذا أفضل لتجربة المستخدم)
+  /* يمكن استخدام handleGuestAction هنا مباشرة إذا أردت استدعاءها من الـ component
+     لكن سنعتمد على الـ try/catch كما هو موحد */
+
   if (!confirm('هل أنت متأكد من حذف هذه المهارة؟')) return;
 
   try {
-    // ✅ استدعاء الحذف الفعلي
     await skillsStore.deleteSkill(id);
     success('تم حذف المهارة بنجاح');
   } catch (err) {
+    // ✅ تجاهل الخطأ إذا كان بسبب صلاحيات الزائر
+    if (err.message === 'GUEST_ACTION_BLOCKED') return;
+
     error('حدث خطأ أثناء الحذف');
     console.error(err);
   }

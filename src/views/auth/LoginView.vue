@@ -43,14 +43,31 @@
             <span>تذكرني</span>
           </label>
           <div class="register-link">
-  <p>ليس لديك حساب؟ <router-link to="/register">إنشاء حساب جديد</router-link></p>
-</div>
+            <p>ليس لديك حساب؟ <router-link to="/register">إنشاء حساب جديد</router-link></p>
+          </div>
         </div>
 
         <button type="submit" :disabled="isLoading" class="login-btn">
           <span v-if="isLoading">جاري الدخول...</span>
           <span v-else>دخول</span>
         </button>
+
+        <div class="divider">
+            <span>أو</span>
+        </div>
+
+        <button
+          type="button"
+          @click="handleGuestLogin"
+          :disabled="isLoading"
+          class="guest-btn"
+        >
+          <span v-if="isLoading">جاري التحميل...</span>
+          <span v-else>
+             تصفح كزائر (Guest)
+          </span>
+        </button>
+
       </form>
     </div>
   </div>
@@ -71,6 +88,7 @@ const form = reactive({
 const isLoading = ref(false);
 const errorMessage = ref('');
 
+// معالجة تسجيل الدخول العادي
 const handleLogin = async () => {
   isLoading.value = true;
   errorMessage.value = '';
@@ -87,6 +105,21 @@ const handleLogin = async () => {
     isLoading.value = false;
   }
 };
+
+// معالجة تسجيل الدخول كزائر
+const handleGuestLogin = async () => {
+  isLoading.value = true;
+  errorMessage.value = '';
+
+  try {
+    await authStore.loginAsGuest();
+  } catch (error) {
+    console.error(error);
+    errorMessage.value = 'فشل الدخول كزائر، يرجى المحاولة لاحقاً';
+  } finally {
+    isLoading.value = false;
+  }
+};
 </script>
 
 <style scoped>
@@ -96,6 +129,7 @@ const handleLogin = async () => {
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 20px;
 }
 
 .login-card {
@@ -204,13 +238,57 @@ const handleLogin = async () => {
   box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
 }
 
-.login-btn:active:not(:disabled) {
+/* تنسيق زر الزائر */
+.guest-btn {
+  width: 100%;
+  padding: 11px;
+  background-color: transparent;
+  color: #667eea;
+  border: 2px solid #667eea;
+  border-radius: 6px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guest-btn:hover:not(:disabled) {
+  background-color: #f0f4ff;
+}
+
+.login-btn:active:not(:disabled),
+.guest-btn:active:not(:disabled) {
   transform: translateY(0);
 }
 
-.login-btn:disabled {
+.login-btn:disabled,
+.guest-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* تنسيق الفاصل */
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 15px 0;
+  color: #a0aec0;
+  font-size: 14px;
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.divider span {
+  padding: 0 10px;
 }
 
 .register-link {

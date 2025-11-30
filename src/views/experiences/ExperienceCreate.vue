@@ -100,15 +100,25 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue';
+import { ref, reactive, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useExperiencesStore } from '@/stores/experiences';
+import { useAuthStore } from '@/stores/auth';
+import { handleGuestAction } from '@/utils/roleHandler';
 
 const router = useRouter();
 const experiencesStore = useExperiencesStore();
+const authStore = useAuthStore();
 const loading = ref(false);
 
-// حقول مساعدة للتعامل مع input type="month"
+// التحقق من صلاحيات الإضافة عند دخول الصفحة
+onMounted(() => {
+  if (authStore.isGuest) {
+    handleGuestAction();
+    router.push('/experiences');
+  }
+});
+
 const dates = reactive({
   start: '',
   end: ''
@@ -117,7 +127,7 @@ const dates = reactive({
 const form = reactive({
   position: '',
   companyName: '',
-  companyLogoUrl: '', // يمكن إضافته مستقبلاً
+  companyLogoUrl: '',
   location: '',
   employmentType: '',
   description: '',
@@ -132,20 +142,35 @@ const formatDate = (dateStr) => {
   return `${months[parseInt(month) - 1]} ${year}`;
 };
 
+// في ExperienceCreate.vue
+
 const handleSubmit = async () => {
+  // التحقق المبدئي (اختياري لأن الـ Store سيفحص أيضاً)
+  if (handleGuestAction()) return;
+
   loading.value = true;
   try {
-    // تجهيز البيانات للـ API (إضافة اليوم الأول من الشهر للتاريخ)
     const payload = {
       ...form,
       startDate: dates.start ? `${dates.start}-01T00:00:00` : null,
       endDate: form.isCurrentJob ? null : (dates.end ? `${dates.end}-01T00:00:00` : null)
     };
 
-    await experiencesStore.createExperience(payload);
-    router.push('/experiences');
+    const result = await experiencesStore.createExperience(payload);
+
+    if (result) {
+      router.push('/experiences');
+    }
   } catch (error) {
-    alert('فشل الحفظ: ' + error.message);
+    // ✅ تجاهل الخطأ إذا كان بسبب صلاحيات الزائر
+    if (error.message === 'GUEST_ACTION_BLOCKED') {
+      return;
+    }
+
+    if (!error.handled) {
+      console.error('خطأ في الحفظ:', error);
+      // يمكنك هنا إضافة alert أو notification للخطأ الحقيقي
+    }
   } finally {
     loading.value = false;
   }
@@ -153,11 +178,10 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-/* نفس التنسيقات الأساسية المستخدمة في الملفات السابقة لتوحيد التصميم */
 .experience-form-container { max-width: 1400px; margin: 0 auto; padding: 20px; }
 .header-section { margin-bottom: 32px; }
 .page-title { font-size: 28px; font-weight: 700; color: #1f2937; }
-.back-button { display: inline-flex; align-items: center; gap: 6px; color: #6b7280; text-decoration: none; margin-bottom: 10px; }
+.back-button { display: inline-flex; align-items: center; gap: 6px; color: #6b7280; text-decoration: none; margin-bottom: 10px; transition: color 0.2s; }
 .back-button:hover { color: #4facfe; }
 .back-button svg { width: 18px; height: 18px; }
 
@@ -172,7 +196,7 @@ const handleSubmit = async () => {
 .form-textarea:focus {
   border-color: #4facfe;
   outline: none;
-  box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.2); /* <-- "ring" effect */
+  box-shadow: 0 0 0 4px rgba(79, 172, 254, 0.2);
   transition: box-shadow 0.18s ease, border-color 0.12s ease;
 }
 .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -183,11 +207,13 @@ const handleSubmit = async () => {
 .checkbox-text { font-size: 14px; font-weight: 500; color: #374151; }
 
 .form-actions { display: flex; gap: 12px; margin-top: 32px; }
-.submit-btn { flex: 1; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; }
+.submit-btn { flex: 1; background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+.submit-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4); }
 .submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
-.cancel-btn { padding: 12px 24px; background: #f3f4f6; color: #4b5563; border-radius: 8px; text-decoration: none; font-weight: 600; }
+.cancel-btn { padding: 12px 24px; background: #f3f4f6; color: #4b5563; border-radius: 8px; text-decoration: none; font-weight: 600; display: flex; align-items: center; transition: background 0.2s; }
+.cancel-btn:hover { background: #e5e7eb; }
 
-/* Preview Card Styling (Matching Dashboard) */
+/* Preview Card */
 .preview-section { position: sticky; top: 20px; height: fit-content; }
 .preview-title { font-size: 16px; font-weight: 700; color: #6b7280; margin-bottom: 12px; }
 .preview-card { background: white; border-radius: 12px; padding: 24px; border: 1px solid #e5e7eb; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
@@ -203,6 +229,6 @@ const handleSubmit = async () => {
 
 @media (max-width: 900px) {
   .form-section { grid-template-columns: 1fr; }
-  .preview-section { display: none; } /* Hide preview on mobile */
+  .preview-section { display: none; }
 }
 </style>

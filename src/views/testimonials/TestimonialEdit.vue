@@ -193,10 +193,17 @@ onMounted(async () => {
   }
 });
 
+
 const handleSubmit = async () => {
   loading.value = true;
   try {
-    await testimonialsStore.updateTestimonial(testimonialId, formData);
+    const result = await testimonialsStore.updateTestimonial(testimonialId, formData);
+
+    // ✅ إذا كان null يعني Guest حاول التعديل (تم حظره)
+    if (result === null) {
+      return; // الرسالة ظهرت بالفعل من handleGuestAction
+    }
+
     router.push('/testimonials');
   } catch (error) {
     console.error('Update failed:', error);

@@ -126,7 +126,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useTechnologiesStore } from '@/stores/technologies';
-
+import { handleGuestAction } from '@/utils/roleHandler'; // ✅ Import
 // Store Setup
 const store = useTechnologiesStore();
 
@@ -194,27 +194,43 @@ const filteredTechnologies = computed(() => {
 
 // Actions
 const toggleStatus = async (tech) => {
+  // ✅ Check guest before action to prevent UI flip if possible,
+  // or rely on catch block to revert
+  if (handleGuestAction()) {
+      // Revert the checkbox immediately because v-model already changed it
+      tech.isActive = !tech.isActive;
+      return;
+  }
+
   try {
     await store.toggleActive(tech.id);
-    // No need for alert, the toggle visual feedback is enough usually
-    // But if error, the switch might need to revert. The store should handle state update.
-  } catch  {
+  } catch (err) {
+    // ✅ Silent return if guest action was blocked (double safety)
+    if (err.message === 'GUEST_ACTION_BLOCKED') {
+        tech.isActive = !tech.isActive; // Revert
+        return;
+    }
+
     alert('حدث خطأ أثناء تغيير الحالة');
-    // Revert checkbox visually if possible or rely on re-fetch
     await store.fetchTechnologies();
   }
 };
 
 const handleDelete = async (id) => {
+  // ✅ Check guest before showing confirm dialog
+  if (handleGuestAction()) return;
+
   if (!confirm('هل أنت متأكد من حذف هذه التقنية؟ سيتم إزالتها من قاعدة البيانات.')) return;
 
   try {
     await store.deleteTechnology(id);
   } catch (err) {
+    // ✅ Silent return
+    if (err.message === 'GUEST_ACTION_BLOCKED') return;
+
     alert('حدث خطأ أثناء الحذف: ' + (err.message || 'خطأ غير معروف'));
   }
 };
-
 
 </script>
 

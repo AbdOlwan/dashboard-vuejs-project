@@ -4,20 +4,30 @@ import router from '@/router';
 
 // Create axios instance
 const axiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'https://localhost:7224/api',
-  timeout: 10000,
+  // تأكد أن هذا الرابط يشير للباك إند الصحيح سواء محلياً أو على السيرفر
+  baseURL: import.meta.env.VITE_API_URL || 'https://portfolio-backend.runasp.net/api',
+  timeout: 15000, // زيادة الوقت قليلاً لأن السيرفر المجاني قد يكون بطيئاً
   headers: {
     'Content-Type': 'application/json',
   }
 });
 
-// Request Interceptor - إضافة Token تلقائياً
+// =========================================================
+// Request Interceptor: إرفاق التوكن مع كل طلب
+// =========================================================
 axiosInstance.interceptors.request.use(
   (config) => {
+    // 1. جلب التوكن من التخزين المحلي
     const token = localStorage.getItem('auth_token');
+
+    // 2. إذا وجد التوكن، قم بإضافته للـ Header
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
+    } else {
+      // (اختياري) طباعة تحذير في الكونسول للمطور
+      // console.warn('Auth: No token found in localStorage for this request.');
     }
+
     return config;
   },
   (error) => {
@@ -25,45 +35,41 @@ axiosInstance.interceptors.request.use(
   }
 );
 
-// Response Interceptor - معالجة الأخطاء المركزية
+// =========================================================
+// Response Interceptor: معالجة أخطاء التوثيق والشبكة
+// =========================================================
 axiosInstance.interceptors.response.use(
   (response) => {
-    // Return the data directly from ApiResponse<T>
+    // إرجاع البيانات مباشرة لتسهيل التعامل معها في الـ Components
     return response.data;
   },
   (error) => {
-    // Handle different error scenarios
     if (error.response) {
       const { status, data, config } = error.response;
 
-      // التحقق مما إذا كان الرابط هو رابط تسجيل الدخول
-      // هذا يمنع التوجيه الإجباري عند فشل تسجيل الدخول (كلمة مرور خطأ)
+      // هل هذا الطلب هو طلب تسجيل دخول أصلاً؟
       const isLoginRequest = config.url.includes('/login') || config.url.includes('Auth/login');
 
       switch (status) {
         case 401:
-          // Unauthorized
+          // إذا جاء الخطأ 401 ولم نكن نحاول تسجيل الدخول، فهذا يعني أن الجلسة انتهت
           if (!isLoginRequest) {
-            // إذا لم يكن طلب تسجيل دخول، فهذا يعني أن الجلسة انتهت
-            // نقوم بمسح البيانات وتوجيه المستخدم لصفحة الدخول
+            console.error('Session Expired or Invalid Token. Redirecting to login...');
+
+            // تنظيف البيانات القديمة
             localStorage.removeItem('auth_token');
             localStorage.removeItem('user');
+
+            // توجيه المستخدم لصفحة الدخول
             router.push('/login');
           }
-          // إذا كان طلب تسجيل دخول، لن نفعل شيئاً هنا
-          // وسينتقل الخطأ إلى الـ Catch في ملف auth.js لعرض رسالة الخطأ
           break;
 
         case 403:
-          console.error('Forbidden:', data.message);
-          break;
-
-        case 404:
-          console.error('Not Found:', data.message);
+          console.error('Forbidden: You do not have permission to access this resource.');
           break;
 
         case 422:
-          // Validation errors
           console.error('Validation Error:', data.errors);
           break;
 
@@ -72,10 +78,10 @@ axiosInstance.interceptors.response.use(
           break;
 
         default:
-          console.error('Error:', data.message);
+          console.error(`Error (${status}):`, data.message);
       }
     } else if (error.request) {
-      console.error('No response from server');
+      console.error('Network Error: No response received from server.');
     } else {
       console.error('Error:', error.message);
     }

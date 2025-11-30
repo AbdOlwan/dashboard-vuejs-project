@@ -56,13 +56,13 @@
       <div v-if="filteredTestimonials.length > 0" class="testimonials-grid">
         <div v-for="item in filteredTestimonials" :key="item.id" class="testimonial-card">
           <div class="card-header">
-            <img
-              v-if="item.clientImageUrl"
-              :src="item.clientImageUrl"
-              alt="Client"
-              class="client-avatar"
-              @error="$event.target.src = 'https://via.placeholder.com/100?text=User'"
-            />
+<img
+  v-if="item.clientImageUrl"
+  :src="item.clientImageUrl"
+  alt="Client"
+  class="client-avatar"
+  @error="(e) => { e.target.onerror = null; e.target.style.display = 'none'; item.clientImageUrl = null; }"
+/>
             <div v-else class="client-avatar-placeholder">
               {{ item.clientName ? item.clientName.charAt(0).toUpperCase() : 'U' }}
             </div>
@@ -177,15 +177,21 @@ const truncateText = (text) => {
   return text.length > 100 ? text.substring(0, 100) + '...' : text;
 };
 
+// ✅ فقط الدوال المتغيرة في script
+
 const handleApprove = async (id) => {
   if (confirm('هل أنت متأكد من الموافقة على هذا الرأي ونشره؟')) {
-    await testimonialsStore.approveTestimonial(id);
+    const result = await testimonialsStore.approveTestimonial(id);
+    // ✅ إذا كان null يعني Guest (تم حظره)
+    if (result === null) return;
   }
 };
 
 const handleDelete = async (id) => {
   if (confirm('هل أنت متأكد من حذف هذا الرأي نهائياً؟')) {
-    await testimonialsStore.deleteTestimonial(id);
+    const result = await testimonialsStore.deleteTestimonial(id);
+    // ✅ إذا كان null يعني Guest (تم حظره)
+    if (result === null) return;
   }
 };
 </script>

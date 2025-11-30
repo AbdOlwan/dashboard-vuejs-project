@@ -1,368 +1,390 @@
 <template>
   <div class="education-form-container">
-    <div class="page-header">
-      <button @click="router.back()" class="back-btn">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-        </svg>
-        رجوع
-      </button>
-      <h1 class="page-title">تعديل بيانات التعليم</h1>
+    <!-- Guest Banner -->
+    <div v-if="authStore.isGuest" class="guest-banner">
+      <div class="banner-icon">👁️</div>
+      <div class="banner-content">
+        <h4>وضع المشاهدة فقط</h4>
+        <p>أنت تشاهد هذه الصفحة كزائر. جميع الحقول للعرض فقط ولا يمكن تعديلها.</p>
+      </div>
     </div>
 
-    <div v-if="isLoading" class="loading-state">
+    <div class="page-header">
+      <div class="header-info">
+        <h1 class="page-title">
+          {{ authStore.isGuest ? 'مشاهدة' : 'تعديل' }} التعليم
+        </h1>
+        <p class="page-subtitle">
+          {{ authStore.isGuest ? 'عرض تفاصيل المؤهل الدراسي' : 'تحديث بيانات المؤهل الدراسي' }}
+        </p>
+      </div>
+      <button @click="router.push('/education')" class="btn-back">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        عودة
+      </button>
+    </div>
+
+    <div v-if="loading" class="loading-state">
       <div class="spinner"></div>
       <p>جاري تحميل البيانات...</p>
     </div>
 
-    <div v-else class="form-card">
-      <form @submit.prevent="handleSubmit">
-        <div class="form-grid">
-          <div class="form-group full-width">
-            <label class="form-label">اسم المؤسسة التعليمية <span class="required">*</span></label>
-            <input
-              v-model="formData.institutionName"
-              type="text"
-              class="form-input"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">الدرجة العلمية <span class="required">*</span></label>
-            <input
-              v-model="formData.degree"
-              type="text"
-              class="form-input"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">مجال الدراسة</label>
-            <input
-              v-model="formData.fieldOfStudy"
-              type="text"
-              class="form-input"
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">تاريخ البدء <span class="required">*</span></label>
-            <input
-              v-model="formData.startDate"
-              type="date"
-              class="form-input"
-              required
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">تاريخ التخرج</label>
-            <div class="date-input-wrapper">
-              <input
-                v-model="formData.endDate"
-                type="date"
-                class="form-input"
-                :disabled="isCurrent"
-              />
-              <label class="checkbox-label">
-                <input type="checkbox" v-model="isCurrent" @change="handleCurrentChange" />
-                <span>أدرس هنا حالياً</span>
-              </label>
-            </div>
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">التقدير / المعدل</label>
-            <input
-              v-model="formData.grade"
-              type="text"
-              class="form-input"
-            />
-          </div>
-
-          <div class="form-group">
-            <label class="form-label">ترتيب العرض</label>
-            <input
-              v-model.number="formData.displayOrder"
-              type="number"
-              class="form-input"
-            />
-          </div>
-
-          <div class="form-group full-width">
-            <label class="form-label">الوصف وتفاصيل أخرى</label>
-            <textarea
-              v-model="formData.description"
-              class="form-textarea"
-              rows="4"
-            ></textarea>
-          </div>
+    <form v-else @submit.prevent="handleSubmit" class="education-form">
+      <div class="form-grid">
+        <!-- Degree -->
+        <div class="form-group full-width">
+          <label class="form-label required">الدرجة العلمية</label>
+          <input
+            v-model="formData.degree"
+            type="text"
+            class="form-input"
+            :class="{ 'read-only': authStore.isGuest }"
+            :readonly="authStore.isGuest"
+            placeholder="مثال: بكالوريوس علوم الحاسب"
+            required
+          />
         </div>
 
-        <div class="form-actions">
-          <button type="button" @click="router.back()" class="btn-secondary">إلغاء</button>
-          <button type="submit" class="btn-primary" :disabled="isSubmitting">
-            {{ isSubmitting ? 'جاري التحديث...' : 'حفظ التعديلات' }}
-          </button>
+        <!-- Institution Name -->
+        <div class="form-group full-width">
+          <label class="form-label required">اسم المؤسسة التعليمية</label>
+          <input
+            v-model="formData.institutionName"
+            type="text"
+            class="form-input"
+            :class="{ 'read-only': authStore.isGuest }"
+            :readonly="authStore.isGuest"
+            placeholder="مثال: جامعة القاهرة"
+            required
+          />
         </div>
-      </form>
-    </div>
+
+        <!-- Field of Study -->
+        <div class="form-group">
+          <label class="form-label">مجال الدراسة</label>
+          <input
+            v-model="formData.fieldOfStudy"
+            type="text"
+            class="form-input"
+            :class="{ 'read-only': authStore.isGuest }"
+            :readonly="authStore.isGuest"
+            placeholder="مثال: علوم الحاسب"
+          />
+        </div>
+
+        <!-- Grade -->
+        <div class="form-group">
+          <label class="form-label">التقدير</label>
+          <input
+            v-model="formData.grade"
+            type="text"
+            class="form-input"
+            :class="{ 'read-only': authStore.isGuest }"
+            :readonly="authStore.isGuest"
+            placeholder="مثال: ممتاز، جيد جداً"
+          />
+        </div>
+
+        <!-- Start Date -->
+        <div class="form-group">
+          <label class="form-label required">تاريخ البدء</label>
+          <input
+            v-model="formData.startDate"
+            type="date"
+            class="form-input"
+            :class="{ 'read-only': authStore.isGuest }"
+            :readonly="authStore.isGuest"
+            required
+          />
+        </div>
+
+        <!-- End Date -->
+        <div class="form-group">
+          <label class="form-label">تاريخ الانتهاء</label>
+          <input
+            v-model="formData.endDate"
+            type="date"
+            class="form-input"
+            :class="{ 'read-only': authStore.isGuest }"
+            :readonly="authStore.isGuest"
+          />
+          <p class="form-hint">اتركه فارغاً إذا كنت لا تزال تدرس</p>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group full-width">
+          <label class="form-label">الوصف</label>
+          <textarea
+            v-model="formData.description"
+            class="form-textarea"
+            :class="{ 'read-only': authStore.isGuest }"
+            :readonly="authStore.isGuest"
+            rows="4"
+            placeholder="أضف تفاصيل إضافية عن المؤهل الدراسي..."
+          ></textarea>
+        </div>
+
+        <!-- Is Active -->
+        <div class="form-group checkbox-group">
+          <label class="checkbox-label">
+            <input
+              v-model="formData.isActive"
+              type="checkbox"
+              :disabled="authStore.isGuest"
+              class="form-checkbox"
+            />
+            <span>عرض في الصفحة العامة</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Form Actions -->
+      <div class="form-actions">
+        <button
+          type="button"
+          @click="router.push('/education')"
+          class="btn-secondary"
+        >
+          إلغاء
+        </button>
+        <button
+          v-if="!authStore.isGuest"
+          type="submit"
+          class="btn-primary"
+          :disabled="submitting"
+        >
+          <span v-if="!submitting">حفظ التغييرات</span>
+          <span v-else>جاري الحفظ...</span>
+        </button>
+        <button
+          v-else
+          type="button"
+          @click="handleGuestSaveAttempt"
+          class="btn-guest"
+        >
+          <span>💾</span>
+          محاولة الحفظ
+        </button>
+      </div>
+    </form>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 import { useEducationStore } from '@/stores/education';
-import educationService from '@/services/educationService';
+import { handleGuestAction, showViewOnlyMessage } from '@/utils/roleHandler';
 
 const router = useRouter();
 const route = useRoute();
+const authStore = useAuthStore();
 const educationStore = useEducationStore();
 
-const isLoading = ref(true);
-const isSubmitting = ref(false);
-const isCurrent = ref(false);
-const educationId = route.params.id;
-
+const loading = ref(true);
+const submitting = ref(false);
 const formData = ref({
-  id: null,
-  institutionName: '',
   degree: '',
+  institutionName: '',
   fieldOfStudy: '',
-  startDate: '',
-  endDate: null,
   grade: '',
+  startDate: '',
+  endDate: '',
   description: '',
-  institutionLogoUrl: '',
-  displayOrder: 0
+  isActive: true
 });
 
 onMounted(async () => {
+  // عرض رسالة للـ Guest عند دخول الصفحة
+  if (authStore.isGuest) {
+    showViewOnlyMessage();
+  }
+
+  // جلب البيانات
   try {
-    // التصحيح هنا: استخدام getById بدلاً من axios المباشر
-    const response = await educationService.getById(educationId);
+    const educationId = parseInt(route.params.id);
+    const education = await educationStore.education.find(e => e.id === educationId);
 
-    // حسب هيكلة BaseService غالباً البيانات تكون في response.data مباشرة إذا كان يرجع الـ body
-    // أو response.data.data إذا كان يرجع الـ axios response
-    // الكود التالي يتعامل مع الاحتمالين بأمان
-    const data = response.data || response;
-
-    formData.value = {
-      id: data.id,
-      institutionName: data.institutionName,
-      degree: data.degree,
-      fieldOfStudy: data.fieldOfStudy,
-      startDate: data.startDate ? data.startDate.split('T')[0] : '',
-      endDate: data.endDate ? data.endDate.split('T')[0] : null,
-      grade: data.grade,
-      description: data.description,
-      institutionLogoUrl: data.institutionLogoUrl,
-      displayOrder: data.displayOrder
-    };
-
-    isCurrent.value = !data.endDate;
-
+    if (education) {
+      formData.value = { ...education };
+    } else {
+      // جلب من API إذا لم يكن موجوداً في Store
+      const data = await educationStore.fetchEducation();
+      const item = data.find(e => e.id === educationId);
+      if (item) formData.value = { ...item };
+    }
   } catch (error) {
-    console.error('Error fetching education:', error);
-    // alert('فشل تحميل البيانات'); // يمكن تفعيلها إذا أردت تنبيهاً
+    console.error('Error loading education:', error);
   } finally {
-    isLoading.value = false;
+    loading.value = false;
   }
 });
 
-const handleCurrentChange = () => {
-  if (isCurrent.value) {
-    formData.value.endDate = null;
+// ... existing imports
+
+const handleSubmit = async () => {
+  // We can keep this UI check for better UX, or rely on the try/catch
+  if (handleGuestAction()) return;
+
+  submitting.value = true;
+  try {
+    const educationId = parseInt(route.params.id);
+    await educationStore.updateEducation(educationId, formData.value);
+    router.push('/education');
+  } catch (err) {
+    // ✅ Standardized Error Handling
+    if (err.message === 'GUEST_ACTION_BLOCKED') return;
+
+    console.error('Error updating education:', err);
+  } finally {
+    submitting.value = false;
   }
 };
 
-const handleSubmit = async () => {
-  isSubmitting.value = true;
-  try {
-    if (isCurrent.value) formData.value.endDate = null;
-
-    await educationStore.updateEducation(educationId, formData.value);
-    router.push('/education');
-  } catch (error) {
-    console.error('Failed to update education:', error);
-    alert('حدث خطأ أثناء تحديث البيانات');
-  } finally {
-    isSubmitting.value = false;
-  }
+const handleGuestSaveAttempt = () => {
+  handleGuestAction();
 };
 </script>
 
 <style scoped>
-/* نفس التنسيقات السابقة */
-.education-form-container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 24px;
-}
+.education-form-container { padding: 24px; max-width: 900px; margin: 0 auto; }
 
-.page-header {
+/* Guest Banner */
+.guest-banner {
+  background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+  border: 2px solid #c084fc;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
   display: flex;
   align-items: center;
   gap: 16px;
-  margin-bottom: 32px;
+  animation: fadeInDown 0.5s ease;
 }
 
-.back-btn {
-  background: transparent;
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.banner-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.banner-content h4 {
+  color: #7c3aed;
+  font-size: 16px;
+  font-weight: 600;
+  margin: 0 0 4px 0;
+}
+
+.banner-content p {
+  color: #6b21a8;
+  font-size: 14px;
+  margin: 0;
+}
+
+/* Page Header */
+.page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 32px; }
+.page-title { font-size: 28px; font-weight: 700; color: #1f2937; margin: 0 0 8px 0; }
+.page-subtitle { color: #6b7280; font-size: 14px; margin: 0; }
+
+.btn-back {
+  background: white;
   border: 1px solid #e5e7eb;
-  padding: 8px 12px;
+  color: #374151;
+  padding: 10px 16px;
   border-radius: 8px;
-  cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: #6b7280;
-  font-family: inherit;
-}
-
-.back-btn:hover {
-  background: #f9fafb;
-  color: #1f2937;
-}
-
-.back-btn svg {
-  width: 18px;
-  height: 18px;
-  transform: rotate(180deg);
-}
-
-.page-title {
-  font-size: 24px;
-  font-weight: 700;
-  color: #1f2937;
-}
-
-.form-card {
-  background: white;
-  border-radius: 12px;
-  padding: 32px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  border: 1px solid #e5e7eb;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 24px;
-  margin-bottom: 32px;
-}
-
-.full-width {
-  grid-column: 1 / -1;
-}
-
-.form-group {
-  display: flex;
-  flex-direction: column;
   gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
+.btn-back:hover { background: #f9fafb; }
+.btn-back svg { width: 20px; height: 20px; }
 
-.form-label {
-  font-size: 14px;
-  font-weight: 500;
-  color: #374151;
-}
+/* Loading */
+.loading-state { text-align: center; padding: 60px 20px; }
+.spinner { border: 4px solid #f3f3f3; border-top: 4px solid #4f46e5; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 0 auto 16px; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
-.required {
-  color: #ef4444;
-}
+/* Form */
+.education-form { background: white; border-radius: 12px; padding: 32px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+.form-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 24px; }
+.form-group { display: flex; flex-direction: column; }
+.form-group.full-width { grid-column: 1 / -1; }
+
+.form-label { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px; }
+.form-label.required::after { content: ' *'; color: #ef4444; }
 
 .form-input, .form-textarea {
-  padding: 10px 14px;
+  padding: 10px 12px;
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
-  transition: border-color 0.2s;
-  font-family: inherit;
+  transition: all 0.2s;
 }
-
 .form-input:focus, .form-textarea:focus {
   outline: none;
   border-color: #4f46e5;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
 }
 
-.form-input:disabled {
-  background: #f3f4f6;
+/* Read-only styling for Guest */
+.form-input.read-only, .form-textarea.read-only {
+  background: #f9fafb;
+  color: #6b7280;
+  border-color: #e5e7eb;
   cursor: not-allowed;
 }
 
-.date-input-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.form-hint { font-size: 12px; color: #6b7280; margin-top: 4px; }
 
-.checkbox-label {
+.checkbox-group { flex-direction: row; align-items: center; }
+.checkbox-label { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+.form-checkbox { width: 18px; height: 18px; cursor: pointer; }
+.form-checkbox:disabled { cursor: not-allowed; opacity: 0.5; }
+
+/* Form Actions */
+.form-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 32px; padding-top: 24px; border-top: 1px solid #e5e7eb; }
+
+.btn-primary, .btn-secondary, .btn-guest {
+  padding: 10px 24px;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  color: #6b7280;
-  cursor: pointer;
 }
 
-.form-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding-top: 24px;
-  border-top: 1px solid #f3f4f6;
-}
+.btn-primary { background: #4f46e5; color: white; }
+.btn-primary:hover { background: #4338ca; }
+.btn-primary:disabled { background: #9ca3af; cursor: not-allowed; }
 
-.btn-primary {
-  background: #4f46e5;
+.btn-secondary { background: #f3f4f6; color: #374151; }
+.btn-secondary:hover { background: #e5e7eb; }
+
+.btn-guest {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
   color: white;
-  padding: 10px 24px;
-  border-radius: 8px;
-  border: none;
-  font-weight: 500;
-  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+}
+.btn-guest:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+  transform: translateY(-2px);
 }
 
-.btn-primary:disabled {
-  background: #a5b4fc;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: white;
-  color: #374151;
-  border: 1px solid #d1d5db;
-  padding: 10px 24px;
-  border-radius: 8px;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.loading-state {
-  text-align: center;
-  padding: 40px;
-}
-
-.spinner {
-  border: 4px solid #f3f3f3;
-  border-top: 4px solid #4f46e5;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  animation: spin 1s linear infinite;
-  margin: 0 auto 16px;
-}
-
-@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-
+/* Responsive */
 @media (max-width: 768px) {
-  .form-grid {
-    grid-template-columns: 1fr;
-  }
+  .form-grid { grid-template-columns: 1fr; }
+  .form-group.full-width { grid-column: 1; }
 }
 </style>

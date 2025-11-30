@@ -21,6 +21,17 @@
       </div>
     </div>
 
+    <!-- ✅ رسالة تحذيرية للـ Guest -->
+    <div v-if="authStore.isGuest" class="warning-banner">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" class="warning-icon">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+      </svg>
+      <div>
+        <strong>وضع المشاهدة فقط</strong>
+        <p>أنت تتصفح الإعدادات في وضع القراءة فقط. لا يمكنك إجراء أي تعديلات.</p>
+      </div>
+    </div>
+
     <form @submit.prevent="handleSubmit" class="form-container">
 
       <div class="form-section">
@@ -45,6 +56,7 @@
               required
               class="form-input"
               placeholder="البورتفوليو الخاص بـ..."
+              :disabled="authStore.isGuest"
             />
           </div>
 
@@ -55,6 +67,7 @@
               rows="4"
               class="form-textarea"
               placeholder="اكتب وصفاً جذاباً للموقع لجذب الزوار..."
+              :disabled="authStore.isGuest"
             ></textarea>
             <div class="char-count">{{ formData.siteDescription.length }} حرف</div>
           </div>
@@ -83,6 +96,7 @@
               class="form-input"
               placeholder="example@email.com"
               dir="ltr"
+              :disabled="authStore.isGuest"
             />
             <p class="form-hint">البريد الذي ستستقبل عليه رسائل الزوار</p>
           </div>
@@ -94,6 +108,7 @@
               @change="handleCvUpload"
               class="form-input file-input"
               accept="application/pdf"
+              :disabled="authStore.isGuest"
             />
             <p class="form-hint">سيتم عرض رابط تحميل لهذا الملف في الموقع</p>
           </div>
@@ -114,8 +129,13 @@
         </div>
 
         <div class="settings-grid">
-          <label class="toggle-card">
-            <input v-model="formData.maintenanceMode" type="checkbox" class="toggle-input" />
+          <label class="toggle-card" :class="{ disabled: authStore.isGuest }">
+            <input
+              v-model="formData.maintenanceMode"
+              type="checkbox"
+              class="toggle-input"
+              :disabled="authStore.isGuest"
+            />
             <div class="toggle-content">
               <div class="toggle-icon maintenance">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -134,7 +154,8 @@
         </div>
       </div>
 
-      <div class="form-actions">
+      <!-- ✅ إظهار الأزرار فقط للـ Admin -->
+      <div v-if="authStore.canModify" class="form-actions">
         <button type="submit" :disabled="loading" class="submit-btn">
           <svg v-if="!loading" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -152,22 +173,23 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
-import siteSettingsService from '@/services/siteSettingsService'; // استيراد الخدمة
+import siteSettingsService from '@/services/siteSettingsService';
+import { useAuthStore } from '@/stores/auth'; // ✅ استيراد AuthStore
+import { handleGuestAction } from '@/utils/roleHandler'; // ✅ استيراد المعالج
 
+const authStore = useAuthStore(); // ✅ تفعيل AuthStore
 const loading = ref(false);
 const selectedCvFile = ref(null);
-const rawSettings = ref([]); // لتخزين البيانات الخام القادمة من الباك اند (مع الـ IDs)
+const rawSettings = ref([]);
 
-// خريطة تربط اسم الحقل في الفورم (المفتاح) بالمفتاح المستخدم في قاعدة البيانات (القيمة)
 const settingsMap = {
   siteName: 'General_SiteName',
   siteDescription: 'SEO_Description',
   contactEmail: 'Contact_Email',
   maintenanceMode: 'System_MaintenanceMode',
-  cvUrl: 'Files_CVUrl' // مفتاح افتراضي لرابط السيرة الذاتية
+  cvUrl: 'Files_CVUrl'
 };
 
-// القيم الافتراضية
 const originalData = {
   siteName: '',
   siteDescription: '',
@@ -177,7 +199,6 @@ const originalData = {
 
 const formData = reactive({ ...originalData });
 
-// 1. جلب الإعدادات عند تحميل الصفحة
 onMounted(async () => {
   await fetchSettings();
 });
@@ -185,14 +206,11 @@ onMounted(async () => {
 const fetchSettings = async () => {
   loading.value = true;
   try {
-    // استخدام getAll من BaseService لجلب المصفوفة الكاملة
     const response = await siteSettingsService.getAll();
-    // التأكد من أننا نملك مصفوفة (BaseService تم إصلاحه ليعيد مصفوفة أو data)
     const settingsList = Array.isArray(response) ? response : (response.data || []);
 
     rawSettings.value = settingsList;
 
-    // تعبئة النموذج بناءً على المفاتيح الموجودة في settingsMap
     settingsList.forEach(setting => {
       if (setting.settingKey === settingsMap.siteName) formData.siteName = setting.settingValue;
       if (setting.settingKey === settingsMap.siteDescription) formData.siteDescription = setting.settingValue;
@@ -208,8 +226,13 @@ const fetchSettings = async () => {
   }
 };
 
-// 2. معالجة رفع ملف CV
 const handleCvUpload = (event) => {
+  // ✅ التحقق من صلاحيات Guest
+  if (handleGuestAction('edit')) {
+    event.target.value = ''; // مسح الملف المختار
+    return;
+  }
+
   const file = event.target.files[0];
   if (file && file.type === 'application/pdf') {
     selectedCvFile.value = file;
@@ -219,56 +242,43 @@ const handleCvUpload = (event) => {
   }
 };
 
-// 3. حفظ الإعدادات
 const handleSubmit = async () => {
+  // ✅ التحقق من صلاحيات Guest
+  if (handleGuestAction('edit')) return;
+
   loading.value = true;
   try {
-    // مصفوفة الوعود (Promises) لتنفيذ العمليات بشكل متوازي أو متتابع
     const promises = [];
 
-    // دالة مساعدة لتجهيز الطلب (تحديث إذا وجد، إنشاء إذا لم يوجد)
     const processSetting = (formKey, value) => {
       const dbKey = settingsMap[formKey];
-      // البحث عن الإعداد في البيانات الخام التي جلبناها سابقاً
       const existingSetting = rawSettings.value.find(s => s.settingKey === dbKey);
 
       const payload = {
         settingKey: dbKey,
-        settingValue: String(value), // تحويل القيم لنص لأن قاعدة البيانات تخزن نصوص
+        settingValue: String(value),
         description: 'Updated via Admin Panel'
       };
 
       if (existingSetting) {
-        // تحديث (PUT) باستخدام ID
         promises.push(siteSettingsService.update(existingSetting.id, payload));
       } else {
-        // إنشاء جديد (POST)
         promises.push(siteSettingsService.create(payload));
       }
     };
 
-    // معالجة الحقول الأساسية
     processSetting('siteName', formData.siteName);
     processSetting('siteDescription', formData.siteDescription);
     processSetting('contactEmail', formData.contactEmail);
     processSetting('maintenanceMode', formData.maintenanceMode);
 
-    // **ملاحظة بخصوص الملفات**:
-    // الكنترولر الحالي لا يدعم رفع الملفات مباشرة في SiteSettingsController.
-    // يجب أن يكون هناك خدمة منفصلة لرفع الملفات تعيد الرابط، ثم نحفظ الرابط هنا.
     if (selectedCvFile.value) {
-       // مثال منطقي (يجب تنفيذه فعلياً إذا توفرت خدمة رفع الملفات):
-       // const uploadResponse = await fileService.upload(selectedCvFile.value);
-       // processSetting('cvUrl', uploadResponse.url);
        console.warn('Upload logic needs a FileService. Skipping file upload save.');
     }
 
-    // تنفيذ جميع الطلبات
     await Promise.all(promises);
 
     alert('تم حفظ الإعدادات بنجاح');
-
-    // إعادة تحميل البيانات لتحديث الـ IDs في حالة الإنشاء الجديد
     await fetchSettings();
 
   } catch (err) {
@@ -284,21 +294,49 @@ const resetForm = () => {
   selectedCvFile.value = null;
   const fileInput = document.querySelector('.file-input');
   if (fileInput) fileInput.value = '';
-  // إعادة جلب البيانات من السيرفر لإلغاء التغييرات المحلية
   fetchSettings();
 };
 </script>
 
 <style scoped>
-/*
-  يتم نسخ جميع الأنماط من ملفات التصميم الأخرى (مثل ProjectCreate.vue)
-  لضمان تطابق التصميم 100%
-*/
-
 .create-container {
   max-width: 900px;
   margin: 0 auto;
   padding: 20px;
+}
+
+/* ✅ رسالة تحذير للـ Guest */
+.warning-banner {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 16px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+}
+
+.warning-icon {
+  width: 32px;
+  height: 32px;
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.warning-banner strong {
+  display: block;
+  color: #92400e;
+  font-size: 16px;
+  margin-bottom: 4px;
+  font-weight: 700;
+}
+
+.warning-banner p {
+  color: #b45309;
+  font-size: 14px;
+  margin: 0;
 }
 
 /* Header */
@@ -482,18 +520,30 @@ const resetForm = () => {
   background: white;
 }
 
+.form-input:disabled,
+.form-textarea:disabled {
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .form-input.file-input {
   padding: 10px 16px;
   cursor: pointer;
+}
+
+.form-input.file-input:disabled {
+  cursor: not-allowed;
 }
 
 .form-input.file-input::file-selector-button {
   display: none;
 }
 
-.form-input:focus,
+.form-input:focus:not(:disabled),
 .form-select:focus,
-.form-textarea:focus {
+.form-textarea:focus:not(:disabled) {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
@@ -537,9 +587,14 @@ const resetForm = () => {
   transition: all 0.2s;
 }
 
-.toggle-card:hover {
+.toggle-card:hover:not(.disabled) {
   background: #f3f4f6;
   border-color: #d1d5db;
+}
+
+.toggle-card.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .toggle-input {

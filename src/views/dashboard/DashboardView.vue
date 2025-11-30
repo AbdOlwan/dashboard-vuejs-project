@@ -205,8 +205,6 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-
-// استيراد الخدمات لجلب البيانات الحقيقية
 import projectsService from '@/services/projectsService';
 import skillsService from '@/services/skillsService';
 import experiencesService from '@/services/experiencesService';
@@ -215,7 +213,6 @@ import contactMessagesService from '@/services/contactMessagesService';
 const authStore = useAuthStore();
 const loading = ref(true);
 
-// تخزين الإحصائيات
 const stats = ref({
   projects: 0,
   skills: 0,
@@ -224,10 +221,8 @@ const stats = ref({
   unreadMessages: 0
 });
 
-// تخزين النشاط الأخير
 const recentActivities = ref([]);
 
-// التاريخ الحالي
 const currentDate = computed(() => {
   const date = new Date();
   return date.toLocaleDateString('ar-EG', {
@@ -238,32 +233,35 @@ const currentDate = computed(() => {
   });
 });
 
-// دالة لجلب كافة البيانات
 const fetchDashboardData = async () => {
   loading.value = true;
   try {
-    // جلب البيانات بشكل متوازي
-    const [projectsRes, skillsRes, experiencesRes, messagesRes] = await Promise.all([
+    const requests = [
       projectsService.getAll(),
       skillsService.getAll(),
-      experiencesService.getAll(),
-      contactMessagesService.getAll() // نستخدم getAll للحصول على القائمة للنشاط
-    ]);
+      experiencesService.getAll()
+    ];
 
-    // معالجة الاستجابات (التأكد من أنها مصفوفات)
+    // ✅ فقط الـ Admin يمكنه جلب الرسائل
+    if (authStore.isAdmin) {
+      requests.push(contactMessagesService.getAll());
+    } else {
+      requests.push(Promise.resolve([]));
+    }
+
+    const [projectsRes, skillsRes, experiencesRes, messagesRes] = await Promise.all(requests);
+
     const projects = Array.isArray(projectsRes) ? projectsRes : (projectsRes.data || []);
     const skills = Array.isArray(skillsRes) ? skillsRes : (skillsRes.data || []);
     const experiences = Array.isArray(experiencesRes) ? experiencesRes : (experiencesRes.data || []);
     const messages = Array.isArray(messagesRes) ? messagesRes : (messagesRes.data || []);
 
-    // 1. تعيين الإحصائيات
     stats.value.projects = projects.length;
     stats.value.skills = skills.length;
     stats.value.experiences = experiences.length;
     stats.value.messages = messages.length;
     stats.value.unreadMessages = messages.filter(m => !m.isRead).length;
 
-    // 2. بناء سجل النشاط الموحد
     const activities = [
       ...projects.map(i => ({ ...i, type: 'project', date: new Date(i.createdAt || i.startDate) })),
       ...skills.map(i => ({ ...i, type: 'skill', date: new Date(i.createdAt) })),
@@ -271,9 +269,8 @@ const fetchDashboardData = async () => {
       ...messages.map(i => ({ ...i, type: 'message', date: new Date(i.createdAt) }))
     ];
 
-    // ترتيب حسب الأحدث (تنازلي) وأخذ أول 6 عناصر
     recentActivities.value = activities
-      .filter(a => !isNaN(a.date)) // استبعاد التواريخ غير الصالحة إن وجدت
+      .filter(a => !isNaN(a.date))
       .sort((a, b) => b.date - a.date)
       .slice(0, 6);
 
@@ -284,7 +281,6 @@ const fetchDashboardData = async () => {
   }
 };
 
-// دالة لتنسيق الوقت النسبي
 const timeAgo = (date) => {
   const seconds = Math.floor((new Date() - date) / 1000);
   let interval = seconds / 31536000;

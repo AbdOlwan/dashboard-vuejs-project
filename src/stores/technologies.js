@@ -1,6 +1,7 @@
 // src/stores/technologies.js
 import { defineStore } from 'pinia';
 import technologiesService from '@/services/technologiesService';
+import { handleGuestAction } from '@/utils/roleHandler'; // ✅ Import Role Handler
 
 export const useTechnologiesStore = defineStore('technologies', {
   state: () => ({
@@ -10,24 +11,17 @@ export const useTechnologiesStore = defineStore('technologies', {
   }),
 
   getters: {
-    // جلب التقنيات النشطة فقط (مفيد للموقع العام)
     activeTechnologies: (state) => state.technologies.filter(t => t.isActive),
-
-    // جلب التقنيات حسب الفئة
     technologiesByCategory: (state) => (category) => {
       return state.technologies.filter(t => t.category === category);
     },
   },
 
   actions: {
-    /**
-     * جلب جميع التقنيات (للوحة التحكم)
-     */
     async fetchTechnologies() {
       this.loading = true;
       this.error = null;
       try {
-        //  getAll() موجودة في baseService وتعمل مع technologiesService
         this.technologies = await technologiesService.getAll();
       } catch (error) {
         this.error = error.message;
@@ -37,27 +31,20 @@ export const useTechnologiesStore = defineStore('technologies', {
       }
     },
 
-    /**
-     * إنشاء تقنية جديدة
-     */
-/**
-     * إنشاء تقنية جديدة
-     */
+    // Admin Only
     async createTechnology(data) {
+      // ✅ Standardized Guest Check
+      if (handleGuestAction('add')) throw new Error('GUEST_ACTION_BLOCKED');
+
       this.loading = true;
       this.error = null;
       try {
         const newTechnology = await technologiesService.create(data);
-
-        // إصلاح: التأكد من أن الاستجابة صالحة قبل إضافتها للقائمة المحلية
-        // في بعض الأحيان الـ Create يعيد رسالة نجاح فقط ولا يعيد الكائن
         if (newTechnology && newTechnology.id) {
             this.technologies.push(newTechnology);
         } else {
-            // إذا لم يعد الكائن، نعيد تحميل القائمة بالكامل لضمان صحة البيانات
             await this.fetchTechnologies();
         }
-
         return newTechnology;
       } catch (error) {
         this.error = error.message;
@@ -68,10 +55,11 @@ export const useTechnologiesStore = defineStore('technologies', {
       }
     },
 
-    /**
-     * تحديث تقنية
-     */
+    // Admin Only
     async updateTechnology(id, data) {
+      // ✅ Standardized Guest Check
+      if (handleGuestAction('edit')) throw new Error('GUEST_ACTION_BLOCKED');
+
       this.loading = true;
       this.error = null;
       try {
@@ -88,10 +76,11 @@ export const useTechnologiesStore = defineStore('technologies', {
       }
     },
 
-    /**
-     * حذف تقنية
-     */
+    // Admin Only
     async deleteTechnology(id) {
+      // ✅ Standardized Guest Check
+      if (handleGuestAction('delete')) throw new Error('GUEST_ACTION_BLOCKED');
+
       this.loading = true;
       this.error = null;
       try {
@@ -106,16 +95,14 @@ export const useTechnologiesStore = defineStore('technologies', {
       }
     },
 
-    /**
-     * تبديل حالة التفعيل
-     */
+    // Admin Only
     async toggleActive(id) {
+      // ✅ Standardized Guest Check
+      if (handleGuestAction('toggle')) throw new Error('GUEST_ACTION_BLOCKED');
+
       this.loading = true;
       this.error = null;
       try {
-        // ملاحظة: الخدمة toggleActive غير موجودة في technologiesService.js
-        // ولكن الكنترولر يدعمها. سنفترض أنك ستضيفها للخدمة.
-        // إذا لم تكن موجودة في baseService, أضفها في technologiesService.js
         await technologiesService.toggleActive(id);
         const tech = this.technologies.find(t => t.id === id);
         if (tech) tech.isActive = !tech.isActive;

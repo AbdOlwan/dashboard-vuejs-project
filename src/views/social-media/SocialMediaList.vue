@@ -13,7 +13,12 @@
             <p class="page-subtitle">إدارة وعرض روابط وسائل التواصل الخاصة بك</p>
           </div>
         </div>
-        <router-link to="/social-media/create" class="add-btn">
+        <!-- ✅ إخفاء زر الإضافة للـ Guest -->
+        <router-link
+          v-if="authStore.canModify"
+          to="/social-media/create"
+          class="add-btn"
+        >
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
           </svg>
@@ -73,7 +78,9 @@
                 <span class="meta-value">{{ link.displayOrder }}</span>
             </div>
 
+            <!-- ✅ إخفاء زر التبديل للـ Guest -->
             <button
+              v-if="authStore.canModify"
               @click="toggleActive(link)"
               class="status-toggle"
               :class="{ active: link.isActive }"
@@ -82,9 +89,14 @@
               <span v-if="actionLoading === link.id" class="small-spinner"></span>
               <span v-else>{{ link.isActive ? 'نشط' : 'غير نشط' }}</span>
             </button>
+            <!-- ✅ عرض الحالة فقط للـ Guest -->
+            <div v-else class="status-badge" :class="{ active: link.isActive }">
+              {{ link.isActive ? 'نشط' : 'غير نشط' }}
+            </div>
         </div>
 
-        <div class="link-actions">
+        <!-- ✅ إخفاء أزرار التعديل والحذف للـ Guest -->
+        <div v-if="authStore.canModify" class="link-actions">
           <router-link :to="`/social-media/${link.id}/edit`" class="action-btn edit" title="تعديل">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -107,7 +119,12 @@
       </div>
       <h3 class="empty-title">لا توجد روابط تواصل</h3>
       <p class="empty-description">لم تقم بإضافة أي حسابات تواصل اجتماعي بعد.</p>
-      <router-link to="/social-media/create" class="empty-action-btn">
+      <!-- ✅ إخفاء زر الإضافة للـ Guest -->
+      <router-link
+        v-if="authStore.canModify"
+        to="/social-media/create"
+        class="empty-action-btn"
+      >
         إضافة رابط جديد
       </router-link>
     </div>
@@ -117,45 +134,39 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import socialMediaService from '@/services/socialMediaService';
+import { useAuthStore } from '@/stores/auth'; // ✅
+import { handleGuestAction } from '@/utils/roleHandler'; // ✅
 
+const authStore = useAuthStore(); // ✅
 const loading = ref(true);
 const error = ref(null);
 const links = ref([]);
 const searchQuery = ref('');
-const actionLoading = ref(null); // Stores ID of item currently being acted upon
+const actionLoading = ref(null);
 
-// Helper to map Platform names to FontAwesome classes (or generic icon)
 const getIconClass = (platform) => {
   const map = {
     'LinkedIn': 'fab fa-linkedin-in',
     'GitHub': 'fab fa-github',
-    'Twitter': 'fab fa-twitter', // or fa-x-twitter
+    'Twitter': 'fab fa-twitter',
     'Facebook': 'fab fa-facebook-f',
     'Instagram': 'fab fa-instagram',
     'Website': 'fas fa-globe',
     'YouTube': 'fab fa-youtube'
   };
-  // Returns mapped icon or a generic link icon
   return map[platform] || 'fas fa-link';
 };
-
-// Fetch Data
-// src/views/SocialMediaList.vue
 
 const fetchLinks = async () => {
   loading.value = true;
   error.value = null;
   try {
     const response = await socialMediaService.getAll();
-
-    // تصحيح: BaseService يعيد المصفوفة جاهزة، لا حاجة لـ .data هنا
-    // إذا كان الـ response مصفوفة نستخدمها، وإلا نحاول الوصول لـ .data (للاحتياط)
     if (Array.isArray(response)) {
         links.value = response;
     } else {
         links.value = response.data || [];
     }
-
   } catch (err) {
     console.error(err);
     error.value = 'حدث خطأ أثناء تحميل البيانات. يرجى التحقق من الاتصال.';
@@ -164,7 +175,6 @@ const fetchLinks = async () => {
   }
 };
 
-// Filter Logic
 const filteredLinks = computed(() => {
   let result = links.value;
   if (searchQuery.value) {
@@ -174,18 +184,18 @@ const filteredLinks = computed(() => {
       (l.profileUrl && l.profileUrl.toLowerCase().includes(query))
     );
   }
-  // Sort by DisplayOrder (ascending)
   return result.sort((a, b) => a.displayOrder - b.displayOrder);
 });
 
-// Delete Action
 const deleteLink = async (id) => {
+  // ✅ التحقق من صلاحيات Guest
+  if (handleGuestAction('delete')) return;
+
   if (!confirm('هل أنت متأكد من حذف هذا الرابط نهائياً؟')) return;
 
   actionLoading.value = id;
   try {
     await socialMediaService.delete(id);
-    // Remove from local list on success
     links.value = links.value.filter(l => l.id !== id);
   } catch (err) {
     alert('فشل الحذف: ' + (err.message || 'خطأ غير معروف'));
@@ -194,12 +204,13 @@ const deleteLink = async (id) => {
   }
 };
 
-// Toggle Active Action
 const toggleActive = async (link) => {
+  // ✅ التحقق من صلاحيات Guest
+  if (handleGuestAction('toggle')) return;
+
   actionLoading.value = link.id;
   try {
     await socialMediaService.toggleActive(link.id);
-    // Update local state
     link.isActive = !link.isActive;
   } catch (err) {
     alert('فشل تغيير الحالة: ' + (err.message || 'خطأ غير معروف'));
@@ -214,7 +225,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* same styles as before with minor tweaks */
 .social-media-container {
   max-width: 1400px;
   margin: 0 auto;
@@ -351,7 +361,6 @@ onMounted(() => {
   font-size: 16px;
 }
 
-/* Loading & Error */
 .loading-state, .error-state {
   background: white;
   border-radius: 16px;
@@ -384,7 +393,6 @@ onMounted(() => {
 
 @keyframes spin { to { transform: rotate(360deg); } }
 
-/* List Items */
 .social-media-list {
   display: grid;
   grid-template-columns: 1fr;
@@ -485,6 +493,26 @@ onMounted(() => {
 }
 .status-toggle:hover { filter: brightness(0.95); }
 
+/* ✅ عرض الحالة فقط للـ Guest */
+.status-badge {
+  padding: 6px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 80px;
+  text-align: center;
+}
+
+.status-badge.active {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.status-badge:not(.active) {
+  background: rgba(107, 114, 128, 0.1);
+  color: #6b7280;
+}
+
 .small-spinner {
   width: 12px;
   height: 12px;
@@ -495,7 +523,6 @@ onMounted(() => {
   animation: spin 1s linear infinite;
 }
 
-/* Actions */
 .link-actions {
   display: flex;
   gap: 8px;
@@ -521,7 +548,6 @@ onMounted(() => {
 .action-btn.delete { color: #ef4444; }
 .action-btn.delete:hover { background: #fee2e2; }
 
-/* Empty State */
 .empty-state {
   background: white;
   border-radius: 16px;
@@ -576,7 +602,6 @@ onMounted(() => {
   box-shadow: 0 4px 12px rgba(67, 233, 123, 0.3);
 }
 
-/* Responsive */
 @media (max-width: 768px) {
   .header-content, .filter-bar { flex-direction: column; gap: 16px; align-items: stretch; }
   .link-card { flex-direction: column; align-items: flex-start; }

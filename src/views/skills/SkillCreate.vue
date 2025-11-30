@@ -181,20 +181,27 @@ const formData = reactive({
   isActive: true,
 });
 
+// في SkillCreate.vue
+
 const handleSubmit = async () => {
   loading.value = true;
   try {
-    // ✅ إرسال البيانات بالمسميات الصحيحة (PascalCase) للـ API
     await skillsStore.createSkill({
       Name: formData.name,
       Category: formData.category,
       DisplayOrder: formData.displayOrder,
-      IconUrl: formData.iconUrl || null, // إرسال null إذا كان فارغاً
+      IconUrl: formData.iconUrl || null,
     });
 
     success('تم إضافة المهارة بنجاح');
     router.push('/skills');
   } catch (err) {
+    // ✅ تجاهل الخطأ إذا كان بسبب صلاحيات الزائر
+    if (err.message === 'GUEST_ACTION_BLOCKED') {
+      console.log('🚫 Guest action blocked - handled silently');
+      return;
+    }
+
     const errorMsg = err.response?.data?.message || err.message || 'حدث خطأ أثناء إضافة المهارة';
     error(errorMsg);
     console.error('خطأ في إنشاء المهارة:', err);

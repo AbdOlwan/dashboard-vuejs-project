@@ -376,16 +376,15 @@ onMounted(() => {
   technologiesStore.fetchTechnologies();
 });
 
+// ProjectCreate.vue - handleSubmit function
+
 const handleSubmit = async () => {
   loading.value = true;
 
-  // التأكد من أن تاريخ الانتهاء إما قيمة أو null
   if (formData.EndDate === '') {
     formData.EndDate = null;
   }
 
-  // تجهيز الكائن النهائي (Payload) للإرسال
-  // ✅ الآن نستخدم الأسماء الصحيحة من formData مباشرة
   const payload = {
     Title: formData.Title,
     ShortDescription: formData.ShortDescription,
@@ -412,12 +411,18 @@ const handleSubmit = async () => {
     success('تم إضافة المشروع بنجاح');
     router.push('/projects');
   } catch (err) {
-    const errorMsg = err.errors
-      ? Object.values(err.errors).flat().join('\n')
-      : (err.message || 'حدث خطأ أثناء إضافة المشروع');
+    console.log('📌 Error caught:', err.message);
 
-    error(errorMsg || 'خطأ غير معروف');
-    console.error("فشل إرسال النموذج:", err);
+    // ✅ لا نعرض رسالة خطأ إذا كان Guest
+    if (err.message === 'GUEST_ACTION_BLOCKED') {
+      console.log('🚫 Guest action blocked - no error message shown');
+    } else {
+      // ✅ نعرض رسالة خطأ فقط للأخطاء الحقيقية
+      const errorMsg = err.errors
+        ? Object.values(err.errors).flat().join('\n')
+        : (err.message || 'حدث خطأ أثناء إضافة المشروع');
+      error(errorMsg);
+    }
   } finally {
     loading.value = false;
   }

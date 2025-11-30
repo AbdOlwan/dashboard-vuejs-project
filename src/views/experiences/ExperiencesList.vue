@@ -5,12 +5,12 @@
         <h1 class="page-title">إدارة الخبرات العملية</h1>
         <p class="page-subtitle">قم بإضافة وإدارة خبراتك العملية والوظيفية</p>
       </div>
-      <router-link to="/experiences/create" class="add-btn">
+      <button @click="handleAddClick" class="add-btn">
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
         </svg>
         إضافة خبرة جديدة
-      </router-link>
+      </button>
     </div>
 
     <div v-if="experiencesStore.loading && experiencesStore.experiences.length === 0" class="loading-state">
@@ -26,9 +26,9 @@
       </div>
       <h3>لا توجد خبرات مضافة</h3>
       <p>لم تقم بإضافة أي خبرات عملية بعد. ابدأ بإضافة خبرتك الأولى.</p>
-      <router-link to="/experiences/create" class="empty-btn">
+      <button @click="handleAddClick" class="empty-btn">
         إضافة خبرة جديدة
-      </router-link>
+      </button>
     </div>
 
     <div v-else>
@@ -89,11 +89,12 @@
           </div>
 
           <div class="card-actions">
-<router-link :to="`/experiences/${exp.id}/edit`" class="action-btn edit">              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <button @click="handleEditClick(exp.id)" class="action-btn edit">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
               </svg>
-              تعديل
-            </router-link>
+              {{ authStore.isGuest ? 'مشاهدة' : 'تعديل' }}
+            </button>
             <button @click="handleDelete(exp.id)" class="action-btn delete">
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -109,9 +110,14 @@
 
 <script setup>
 import { onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import { useExperiencesStore } from '@/stores/experiences';
+import { useAuthStore } from '@/stores/auth';
+import { handleGuestAction } from '@/utils/roleHandler';
 
+const router = useRouter();
 const experiencesStore = useExperiencesStore();
+const authStore = useAuthStore();
 
 onMounted(() => {
   experiencesStore.fetchExperiences();
@@ -123,11 +129,29 @@ const formatDate = (dateString) => {
   return date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long' });
 };
 
+const handleAddClick = () => {
+  if (handleGuestAction()) return; // إذا كان Guest، سيظهر الرسالة ويتوقف
+  router.push('/experiences/create');
+};
+
+const handleEditClick = (id) => {
+  // السماح بالدخول للجميع، لكن الصفحة ستكون للمشاهدة فقط للـ Guest
+  router.push(`/experiences/${id}/edit`);
+};
+
+// في ExperiencesList.vue
+
 const handleDelete = async (id) => {
+  // هذا الفحص المبدئي ممتاز، وسيبقى كخط دفاع أول
+  if (handleGuestAction()) return;
+
   if (confirm('هل أنت متأكد من رغبتك في حذف هذه الخبرة؟ لا يمكن التراجع عن هذا الإجراء.')) {
     try {
       await experiencesStore.deleteExperience(id);
     } catch (error) {
+      // ✅ خط الدفاع الثاني: تجاهل الخطأ القادم من الـ Store
+      if (error.message === 'GUEST_ACTION_BLOCKED') return;
+
       alert('حدث خطأ أثناء الحذف: ' + error);
     }
   }
@@ -176,6 +200,8 @@ const handleDelete = async (id) => {
   text-decoration: none;
   transition: all 0.3s;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border: none;
+  cursor: pointer;
 }
 
 .add-btn:hover {
@@ -228,6 +254,8 @@ const handleDelete = async (id) => {
   border-radius: 8px;
   text-decoration: none;
   font-weight: 500;
+  border: none;
+  cursor: pointer;
 }
 
 /* Stats */

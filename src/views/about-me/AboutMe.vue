@@ -10,10 +10,20 @@
           <h2 class="page-title">معلومات عني</h2>
           <p class="page-subtitle">إدارة المعلومات الشخصية والسيرة الذاتية</p>
         </div>
-        <button @click="toggleEditMode" class="edit-btn" :disabled="isSaving">
+
+        <button
+          v-if="authStore.isAdmin"
+          @click="toggleEditMode"
+          class="edit-btn"
+          :disabled="isSaving"
+        >
           <span v-if="!isEditMode">تعديل</span>
           <span v-else>إلغاء</span>
         </button>
+
+        <div v-else class="guest-badge">
+          <span>وضع العرض (Guest View)</span>
+        </div>
       </div>
 
       <div class="profile-card">
@@ -46,7 +56,7 @@
           <form @submit.prevent="saveProfile">
             <div class="info-grid">
               <div class="info-item">
-                <label class="info-label">الاسم الكامل <span class="required">*</span></label>
+                <label class="info-label">الاسم الكامل <span class="required" v-if="isEditMode">*</span></label>
                 <input
                   v-if="isEditMode"
                   v-model="form.fullName"
@@ -58,7 +68,7 @@
               </div>
 
               <div class="info-item">
-                <label class="info-label">المسمى الوظيفي <span class="required">*</span></label>
+                <label class="info-label">المسمى الوظيفي <span class="required" v-if="isEditMode">*</span></label>
                 <input
                   v-if="isEditMode"
                   v-model="form.title"
@@ -70,7 +80,7 @@
               </div>
 
               <div class="info-item">
-                <label class="info-label">البريد الإلكتروني <span class="required">*</span></label>
+                <label class="info-label">البريد الإلكتروني <span class="required" v-if="isEditMode">*</span></label>
                 <input
                   v-if="isEditMode"
                   v-model="form.email"
@@ -82,7 +92,7 @@
               </div>
 
               <div class="info-item">
-                <label class="info-label">رقم الهاتف <span class="required">*</span></label>
+                <label class="info-label">رقم الهاتف <span class="required" v-if="isEditMode">*</span></label>
                 <input
                   v-if="isEditMode"
                   v-model="form.phone"
@@ -94,7 +104,7 @@
               </div>
 
               <div class="info-item">
-                <label class="info-label">الموقع <span class="required">*</span></label>
+                <label class="info-label">الموقع <span class="required" v-if="isEditMode">*</span></label>
                 <input
                   v-if="isEditMode"
                   v-model="form.location"
@@ -137,7 +147,7 @@
             </div>
 
             <div class="bio-section">
-              <label class="info-label">نبذة عني <span class="required">*</span></label>
+              <label class="info-label">نبذة عني <span class="required" v-if="isEditMode">*</span></label>
               <textarea
                 v-if="isEditMode"
                 v-model="form.bio"
@@ -174,7 +184,9 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import aboutMeService from '@/services/aboutMeService';
+import { useAuthStore } from '@/stores/auth'; // استيراد الـ store
 
+const authStore = useAuthStore(); // تعريف الـ store
 const loading = ref(true);
 const isEditMode = ref(false);
 const isSaving = ref(false);
@@ -200,7 +212,6 @@ const fetchData = async () => {
   try {
     const data = await aboutMeService.get();
     if (data) {
-      // تعبئة الفورم بالبيانات القادمة من السيرفر
       Object.assign(form, {
         fullName: data.fullName,
         title: data.title,
@@ -213,8 +224,10 @@ const fetchData = async () => {
         location: data.location
       });
     } else {
-        // في حالة عدم وجود بيانات، يمكن تفعيل وضع التعديل تلقائياً
-        isEditMode.value = true;
+        // [Modification]: التفعيل التلقائي للتعديل فقط إذا كان أدمن
+        if (authStore.isAdmin) {
+          isEditMode.value = true;
+        }
     }
   } catch (error) {
     console.error('Error fetching about info:', error);
@@ -226,7 +239,6 @@ const fetchData = async () => {
 
 const toggleEditMode = () => {
   if (isEditMode.value) {
-    // عند الإلغاء، نعيد تحميل البيانات الأصلية لإلغاء التغييرات غير المحفوظة
     fetchData();
   }
   isEditMode.value = !isEditMode.value;
@@ -235,18 +247,25 @@ const toggleEditMode = () => {
 };
 
 const saveProfile = async () => {
+  // [Check]: حماية إضافية للتحقق من الأدمن
+  if (!authStore.isAdmin) return;
+
   isSaving.value = true;
   errorMessage.value = '';
   successMessage.value = '';
 
   try {
-    // إرسال البيانات للـ Backend
     await aboutMeService.createOrUpdate(form);
     successMessage.value = 'تم حفظ البيانات بنجاح';
     isEditMode.value = false;
   } catch (error) {
     console.error('Error saving profile:', error);
-    errorMessage.value = 'حدث خطأ أثناء حفظ البيانات. تأكد من ملء جميع الحقول المطلوبة.';
+    // [Check]: التعامل مع خطأ 403 إذا حدث
+    if (error.response && error.response.status === 403) {
+       errorMessage.value = 'عذراً، ليس لديك صلاحية التعديل.';
+    } else {
+       errorMessage.value = 'حدث خطأ أثناء حفظ البيانات. تأكد من ملء جميع الحقول المطلوبة.';
+    }
   } finally {
     isSaving.value = false;
   }
@@ -262,10 +281,21 @@ onMounted(() => {
 </script>
 
 <style scoped>
+/* نفس الـ Styles السابقة مع إضافة بسيطة للبادج */
 .about-container {
   max-width: 1000px;
   margin: 0 auto;
   padding: 20px;
+}
+
+.guest-badge {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid #e5e7eb;
 }
 
 .loading-state {

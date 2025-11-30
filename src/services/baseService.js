@@ -12,20 +12,14 @@ export class BaseService {
   /**
    * Get all items
    */
-// src/services/baseService.js
-
-  /**
-   * Get all items
-   */
   async getAll() {
     try {
       const response = await axios.get(`/${this.endpoint}`);
 
-      // إصلاح: التحقق مما إذا كانت الاستجابة هي المصفوفة مباشرة أو مغلفة داخل خاصية
+      // التحقق مما إذا كانت الاستجابة مصفوفة مباشرة أو مغلفة
       if (Array.isArray(response)) {
         return response;
       }
-      // التعامل مع الـ Wrapper الشائع (مثلاً ApiResponse يحتوي على data أو result)
       else if (response && Array.isArray(response.data)) {
         return response.data;
       }
@@ -33,7 +27,6 @@ export class BaseService {
         return response.result;
       }
 
-      // إذا لم نستطع استخراج مصفوفة، نعيد المصفوفة كما هي (أو فارغة) لتجنب الخطأ
       return response || [];
 
     } catch (error) {
@@ -47,7 +40,7 @@ export class BaseService {
   async getActive() {
     try {
       const response = await axios.get(`/${this.endpoint}/active`);
-      return response; // تم التعديل
+      return response;
     } catch (error) {
       throw this.handleError(error);
     }
@@ -58,9 +51,20 @@ export class BaseService {
    */
   async getById(id) {
     try {
+      console.log(`🔍 BaseService: Fetching ${this.endpoint}/${id}`);
       const response = await axios.get(`/${this.endpoint}/${id}`);
-      return response; // تم التعديل
+      console.log('✅ BaseService: Response received:', response);
+
+      // ✅ إذا كانت الاستجابة مغلفة في data، استخرجها
+      if (response && response.data) {
+        return response.data;
+      }
+
+      // ✅ إذا كانت الاستجابة مباشرة
+      return response;
+
     } catch (error) {
+      console.error('❌ BaseService: Error in getById:', error);
       throw this.handleError(error);
     }
   }
@@ -71,7 +75,13 @@ export class BaseService {
   async create(data) {
     try {
       const response = await axios.post(`/${this.endpoint}`, data);
-      return response; // تم التعديل
+
+      // استخراج البيانات من الغلاف إن وجد
+      if (response && response.data) {
+        return response.data;
+      }
+      return response;
+
     } catch (error) {
       throw this.handleError(error);
     }
@@ -83,7 +93,13 @@ export class BaseService {
   async update(id, data) {
     try {
       const response = await axios.put(`/${this.endpoint}/${id}`, data);
-      return response; // تم التعديل
+
+      // استخراج البيانات من الغلاف إن وجد
+      if (response && response.data) {
+        return response.data;
+      }
+      return response;
+
     } catch (error) {
       throw this.handleError(error);
     }
@@ -94,7 +110,6 @@ export class BaseService {
    */
   async delete(id) {
     try {
-      // Delete usually returns 200 OK with simple message, axios interceptor handles it
       const response = await axios.delete(`/${this.endpoint}/${id}`);
       return response;
     } catch (error) {
@@ -118,6 +133,8 @@ export class BaseService {
    * Centralized error handler
    */
   handleError(error) {
+    console.error('❌ BaseService Error:', error);
+
     if (error.response?.data) {
       return {
         message: error.response.data.message || 'حدث خطأ',
@@ -126,7 +143,7 @@ export class BaseService {
       };
     }
     return {
-      message: 'خطأ في الاتصال بالخادم',
+      message: error.message || 'خطأ في الاتصال بالخادم',
       errors: [],
       statusCode: 500
     };

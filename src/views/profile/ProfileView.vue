@@ -18,8 +18,9 @@
       <div class="profile-card">
         <div class="card-header">
           <h2 class="card-title">معلومات الحساب</h2>
+          <!-- ✅ إخفاء زر التعديل للـ Guest -->
           <button
-            v-if="!isEditingProfile"
+            v-if="!isEditingProfile && authStore.canModify"
             @click="isEditingProfile = true"
             class="edit-btn"
           >
@@ -43,7 +44,7 @@
               v-model="profileForm.username"
               type="text"
               class="form-input"
-              :disabled="!isEditingProfile"
+              :disabled="!isEditingProfile || !authStore.canModify"
               required
             />
           </div>
@@ -54,7 +55,7 @@
               v-model="profileForm.email"
               type="email"
               class="form-input"
-              :disabled="!isEditingProfile"
+              :disabled="!isEditingProfile || !authStore.canModify"
               required
               dir="ltr"
             />
@@ -77,7 +78,8 @@
             />
           </div>
 
-          <div v-if="isEditingProfile" class="form-actions">
+          <!-- ✅ إظهار أزرار الحفظ فقط للـ Admin -->
+          <div v-if="isEditingProfile && authStore.canModify" class="form-actions">
             <button type="submit" :disabled="isLoading" class="save-btn">
               <Save class="btn-icon" v-if="!isLoading" />
               <div v-else class="spinner"></div>
@@ -102,6 +104,15 @@
           <Lock class="card-icon" />
         </div>
 
+        <!-- ✅ رسالة تنبيه للـ Guest -->
+        <div v-if="authStore.isGuest" class="warning-message">
+          <AlertCircle class="warning-icon" />
+          <div>
+            <strong>وضع المشاهدة فقط</strong>
+            <p>لا يمكنك تغيير كلمة المرور في وضع الاستكشاف</p>
+          </div>
+        </div>
+
         <div v-if="passwordError" class="error-message">
           {{ passwordError }}
         </div>
@@ -118,6 +129,7 @@
               type="password"
               class="form-input"
               placeholder="********"
+              :disabled="authStore.isGuest"
               required
             />
           </div>
@@ -129,6 +141,7 @@
               type="password"
               class="form-input"
               placeholder="********"
+              :disabled="authStore.isGuest"
               required
               minlength="6"
             />
@@ -142,11 +155,14 @@
               type="password"
               class="form-input"
               placeholder="********"
+              :disabled="authStore.isGuest"
               required
             />
           </div>
 
+          <!-- ✅ إخفاء زر تغيير كلمة المرور للـ Guest -->
           <button
+            v-if="authStore.canModify"
             type="submit"
             :disabled="isChangingPassword"
             class="save-btn full-width"
@@ -164,7 +180,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
 import { useAuthStore } from '@/stores/auth';
-import { User, Edit2, Save, Lock, Key } from 'lucide-vue-next';
+import { handleGuestAction } from '@/utils/roleHandler'; // ✅ استيراد المعالج
+import { User, Edit2, Save, Lock, Key, AlertCircle } from 'lucide-vue-next';
 
 const authStore = useAuthStore();
 
@@ -207,8 +224,11 @@ const loadUserData = async () => {
   }
 };
 
-// تحديث الملف الشخصي
+// ✅ تحديث الملف الشخصي مع الحماية
 const handleUpdateProfile = async () => {
+  // ✅ التحقق من صلاحيات Guest
+  if (handleGuestAction('edit')) return;
+
   errorMessage.value = '';
   successMessage.value = '';
   isLoading.value = true;
@@ -243,8 +263,11 @@ const cancelProfileEdit = () => {
   successMessage.value = '';
 };
 
-// تغيير كلمة المرور
+// ✅ تغيير كلمة المرور مع الحماية
 const handleChangePassword = async () => {
+  // ✅ التحقق من صلاحيات Guest
+  if (handleGuestAction('edit')) return;
+
   passwordError.value = '';
   passwordSuccess.value = '';
 
@@ -428,6 +451,38 @@ const formatDate = (dateString) => {
   margin-bottom: 20px;
   font-size: 14px;
   border: 1px solid #a7f3d0;
+}
+
+/* ✅ رسالة تحذير للـ Guest */
+.warning-message {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 2px solid #f59e0b;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.warning-icon {
+  width: 24px;
+  height: 24px;
+  color: #d97706;
+  flex-shrink: 0;
+}
+
+.warning-message strong {
+  display: block;
+  color: #92400e;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.warning-message p {
+  color: #b45309;
+  font-size: 13px;
+  margin: 0;
 }
 
 /* Form */

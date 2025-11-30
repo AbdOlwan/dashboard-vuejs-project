@@ -47,7 +47,12 @@
         <div class="form-grid">
           <div class="form-group">
             <label class="form-label required">منصة التواصل</label>
-            <select v-model="formData.platform" required class="form-select">
+            <select
+              v-model="formData.platform"
+              required
+              class="form-select"
+              :disabled="authStore.isGuest"
+            >
               <option value="" disabled>اختر المنصة</option>
               <option v-for="p in platforms" :key="p.value" :value="p.value">{{ p.label }}</option>
             </select>
@@ -62,6 +67,7 @@
               class="form-input"
               placeholder="https://linkedin.com/in/username"
               dir="ltr"
+              :disabled="authStore.isGuest"
             />
           </div>
 
@@ -72,6 +78,7 @@
               type="number"
               min="0"
               class="form-input"
+              :disabled="authStore.isGuest"
             />
           </div>
 
@@ -82,6 +89,7 @@
               type="text"
               class="form-input"
               dir="ltr"
+              :disabled="authStore.isGuest"
             />
             <p class="form-hint">اختياري</p>
           </div>
@@ -90,7 +98,8 @@
 
       <div v-if="submitError" class="error-alert">{{ submitError }}</div>
 
-      <div class="form-actions">
+      <!-- ✅ إظهار الأزرار فقط للـ Admin -->
+      <div v-if="authStore.canModify" class="form-actions">
         <button type="submit" :disabled="loading" class="submit-btn">
           <svg v-if="!loading" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -110,7 +119,10 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import socialMediaService from '@/services/socialMediaService';
+import { useAuthStore } from '@/stores/auth'; // ✅
+import { handleGuestAction } from '@/utils/roleHandler'; // ✅
 
+const authStore = useAuthStore(); // ✅
 const router = useRouter();
 const route = useRoute();
 const linkId = route.params.id;
@@ -160,6 +172,9 @@ onMounted(async () => {
 });
 
 const handleSubmit = async () => {
+  // ✅ التحقق من صلاحيات Guest
+  if (handleGuestAction('edit')) return;
+
   loading.value = true;
   submitError.value = '';
   try {
@@ -179,7 +194,6 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-/* Inherits most styles from Create, with specific overrides for Edit */
 .create-container { max-width: 900px; margin: 0 auto; padding: 20px; }
 .header-section { background: white; border-radius: 16px; padding: 24px 28px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; }
 .back-btn { display: inline-flex; align-items: center; gap: 6px; color: #6b7280; font-size: 14px; font-weight: 600; text-decoration: none; margin-bottom: 20px; }
@@ -194,7 +208,6 @@ const handleSubmit = async () => {
 .form-section { background: white; border-radius: 16px; padding: 28px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); border: 1px solid #e5e7eb; }
 .section-header { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 2px solid #f3f4f6; }
 
-/* CSS Fixes for Huge Icon (Orange version) */
 .section-icon {
   width: 48px !important;
   height: 48px !important;
@@ -221,7 +234,8 @@ const handleSubmit = async () => {
 .form-label { font-size: 14px; font-weight: 600; color: #374151; margin-bottom: 8px; }
 .form-label.required::after { content: '*'; color: #ef4444; }
 .form-input, .form-select { width: 100%; padding: 12px 16px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; background: white; }
-.form-input:focus, .form-select:focus { outline: none; border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1); }
+.form-input:disabled, .form-select:disabled { background: #f9fafb; color: #6b7280; cursor: not-allowed; opacity: 0.7; }
+.form-input:focus:not(:disabled), .form-select:focus:not(:disabled) { outline: none; border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1); }
 
 .form-actions { display: flex; gap: 12px; padding-top: 8px; }
 .submit-btn { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); color: white; padding: 14px 24px; border: none; border-radius: 10px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all 0.3s; }

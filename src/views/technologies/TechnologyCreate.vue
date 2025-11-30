@@ -107,7 +107,7 @@
 import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { useTechnologiesStore } from '@/stores/technologies';
-
+import { handleGuestAction } from '@/utils/roleHandler'; // ✅ Import
 const router = useRouter();
 const store = useTechnologiesStore();
 
@@ -131,14 +131,19 @@ const formData = reactive({
 });
 
 const handleSubmit = async () => {
+  // ✅ Guest Check
+  if (handleGuestAction()) return;
+
   if (!formData.name || !formData.category) return;
 
   loading.value = true;
   try {
     await store.createTechnology(formData);
-    // Redirect on success
     router.push('/technologies');
   } catch (err) {
+    // ✅ Silent return
+    if (err.message === 'GUEST_ACTION_BLOCKED') return;
+
     console.error(err);
     alert('حدث خطأ أثناء حفظ البيانات: ' + (err.response?.data?.message || err.message));
   } finally {

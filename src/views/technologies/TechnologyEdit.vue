@@ -110,7 +110,7 @@
 import { ref, reactive, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useTechnologiesStore } from '@/stores/technologies';
-
+import { handleGuestAction } from '@/utils/roleHandler'; // ✅ Import  
 const router = useRouter();
 const route = useRoute();
 const store = useTechnologiesStore();
@@ -179,6 +179,9 @@ onMounted(async () => {
 });
 
 const handleSubmit = async () => {
+  // ✅ Guest Check
+  if (handleGuestAction()) return;
+
   if (!formData.name || !formData.category) return;
 
   loading.value = true;
@@ -186,6 +189,9 @@ const handleSubmit = async () => {
     await store.updateTechnology(techId, formData);
     router.push('/technologies');
   } catch (err) {
+    // ✅ Silent return
+    if (err.message === 'GUEST_ACTION_BLOCKED') return;
+
     console.error(err);
     alert('حدث خطأ أثناء التعديل: ' + (err.response?.data?.message || err.message));
   } finally {
