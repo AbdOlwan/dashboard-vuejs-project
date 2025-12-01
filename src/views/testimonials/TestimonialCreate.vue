@@ -144,6 +144,25 @@
             />
             <span class="form-hint">الرقم الأقل يظهر أولاً (0 هو الأعلى)</span>
         </div>
+
+        <!-- ✅ FIX: Add isApproved field -->
+        <div class="form-group mt-4">
+          <label class="toggle-card">
+            <input v-model="formData.isApproved" type="checkbox" class="toggle-input" />
+            <div class="toggle-content">
+              <div class="toggle-icon green">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="toggle-title">نشر مباشرة</h3>
+                <p class="toggle-description">الموافقة على الرأي ونشره في الموقع فوراً</p>
+              </div>
+            </div>
+            <div class="toggle-switch"><span class="toggle-slider"></span></div>
+          </label>
+        </div>
       </div>
 
       <div class="form-actions">
@@ -174,10 +193,10 @@ const formData = reactive({
   clientImageUrl: '',
   testimonialText: '',
   rating: 5,
-  displayOrder: 0
+  displayOrder: 0,
+  isApproved: false // ✅ FIX: Initialize isApproved
 });
 
-// ✅ التحقق من صحة الرابط
 const validateUrl = () => {
   const url = formData.clientImageUrl;
   if (!url) {
@@ -185,7 +204,6 @@ const validateUrl = () => {
     return;
   }
 
-  // منع الروابط المحلية
   if (url.includes('localhost') || url.includes('127.0.0.1')) {
     urlError.value = '⛔ لا يمكن استخدام روابط محلية (Localhost) في بيئة الإنتاج';
     return;
@@ -194,7 +212,6 @@ const validateUrl = () => {
   urlError.value = null;
 };
 
-// ✅ التعامل مع خطأ تحميل الصورة في المعاينة
 const handleImageError = () => {
   urlError.value = '⚠️ الرابط لا يؤدي إلى صورة صالحة';
 };
@@ -204,6 +221,9 @@ const handleSubmit = async () => {
 
   loading.value = true;
   try {
+    // ✅ FIX: Ensure all required fields are present
+    console.log('📤 Submitting testimonial:', formData);
+
     const result = await testimonialsStore.createTestimonial(formData);
 
     if (result === null) {
@@ -214,7 +234,10 @@ const handleSubmit = async () => {
     router.push('/testimonials');
   } catch (error) {
     console.error('Error creating testimonial:', error);
-    alert('حدث خطأ أثناء إضافة الرأي');
+
+    // ✅ Better error handling
+    const errorMessage = error?.message || error?.response?.data?.message || 'حدث خطأ أثناء إضافة الرأي';
+    alert(errorMessage);
   } finally {
     loading.value = false;
   }
@@ -222,7 +245,6 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-/* Reusing the design system */
 .create-container { max-width: 900px; margin: 0 auto; padding: 20px; }
 .header-section { background: white; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; flex-direction: column; gap: 16px; }
 .back-btn { display: inline-flex; align-items: center; gap: 6px; color: #6b7280; font-size: 14px; font-weight: 600; text-decoration: none; }
@@ -247,17 +269,13 @@ const handleSubmit = async () => {
 .mt-4 { margin-top: 16px; }
 .form-label { font-weight: 600; font-size: 14px; color: #374151; }
 .form-label.required::after { content: " *"; color: #ef4444; }
-
 .form-input { padding: 12px; border: 2px solid #e5e7eb; border-radius: 10px; font-size: 14px; transition: border-color 0.2s; }
 .form-input:focus { outline: none; border-color: #FF5F6D; }
 .border-red-500 { border-color: #ef4444 !important; }
 .error-text { font-size: 12px; color: #ef4444; margin-top: 4px; }
-
-/* Image Preview */
 .image-preview { margin-top: 8px; display: flex; align-items: center; gap: 10px; padding: 8px; background: #f9fafb; border-radius: 8px; }
 .preview-label { font-size: 12px; color: #6b7280; }
 .image-preview img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-
 .form-hint { font-size: 12px; color: #9ca3af; }
 .rating-input { display: flex; align-items: center; gap: 4px; }
 .star-btn { background: none; border: none; cursor: pointer; padding: 2px; color: #d1d5db; transition: transform 0.1s; }
@@ -265,11 +283,28 @@ const handleSubmit = async () => {
 .star-btn.active { color: #fbbf24; }
 .star-btn:hover { transform: scale(1.1); }
 .rating-text { margin-right: 8px; font-weight: 600; color: #6b7280; }
+
+/* Toggle Switch Styles */
+.toggle-card { display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #f9fafb; border: 2px solid #e5e7eb; border-radius: 12px; cursor: pointer; transition: all 0.2s; }
+.toggle-card:hover { background: #f3f4f6; }
+.toggle-input { display: none; }
+.toggle-input:checked + .toggle-content + .toggle-switch .toggle-slider { background: #10b981; }
+.toggle-input:checked + .toggle-content + .toggle-switch .toggle-slider::before { transform: translateX(24px); }
+.toggle-content { display: flex; align-items: center; gap: 12px; flex: 1; }
+.toggle-icon.green { background: #10b981; width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; }
+.toggle-icon svg { width: 18px; height: 18px; }
+.toggle-title { font-size: 14px; font-weight: 600; color: #1f2937; }
+.toggle-description { font-size: 12px; color: #6b7280; }
+.toggle-switch { width: 52px; height: 28px; background: #d1d5db; border-radius: 14px; position: relative; transition: all 0.3s; }
+.toggle-slider { position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; background: white; border-radius: 50%; transition: all 0.3s; }
+.toggle-slider::before { content: ''; position: absolute; inset: 0; border-radius: 50%; background: white; transition: transform 0.3s; }
+
 .form-actions { display: flex; gap: 12px; padding-top: 12px; }
 .submit-btn { flex: 1; background: linear-gradient(135deg, #FFC371 0%, #FF5F6D 100%); color: white; padding: 14px; border: none; border-radius: 10px; font-weight: 600; cursor: pointer; display: flex; justify-content: center; }
 .submit-btn:disabled { opacity: 0.7; cursor: not-allowed; }
 .cancel-btn { padding: 14px 32px; background: white; border: 2px solid #e5e7eb; color: #6b7280; border-radius: 10px; font-weight: 600; text-decoration: none; display: flex; align-items: center; }
 .cancel-btn:hover { background: #f9fafb; color: #374151; }
 .spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: white; border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 @media (max-width: 768px) { .form-grid { grid-template-columns: 1fr; } }
 </style>
