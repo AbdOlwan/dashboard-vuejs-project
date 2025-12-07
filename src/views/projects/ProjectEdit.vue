@@ -384,11 +384,11 @@ const loading = ref(false);
 const pageLoading = ref(true);
 const projectId = route.params.id;
 
-// ✅ عرض رسالة المشاهدة فقط للـ Guest
 if (isViewOnly.value) {
   showViewOnlyMessage();
 }
 
+// 1. تحديث تعريف البيانات ليشمل الصور
 const formData = reactive({
   Title: '',
   ShortDescription: '',
@@ -404,6 +404,7 @@ const formData = reactive({
   IsFeatured: false,
   IsActive: true,
   TechnologyIds: [],
+  ProjectImages: [], // ✅ إضافة مصفوفة الصور هنا
   ClientName: '',
   ClientFeedback: '',
   Rating: null,
@@ -413,7 +414,6 @@ const formData = reactive({
 const loadProjectData = (project) => {
   console.log('🔍 Loading project data:', project);
 
-  // ✅ معالجة الحقول المختلفة (titleAr أو title)
   formData.Title = project.title || project.titleAr || '';
   formData.ShortDescription = project.shortDescription || project.shortDescriptionAr || '';
   formData.FullDescription = project.fullDescription || project.fullDescriptionAr || '';
@@ -423,7 +423,6 @@ const loadProjectData = (project) => {
   formData.LiveDemoUrl = project.liveDemoUrl || '';
   formData.YouTubeVideoUrl = project.youTubeVideoUrl || project.youtubeVideoUrl || '';
 
-  // ✅ معالجة التواريخ
   if (project.startDate) {
     formData.StartDate = project.startDate.split('T')[0];
   }
@@ -437,41 +436,36 @@ const loadProjectData = (project) => {
   formData.IsFeatured = project.isFeatured || false;
   formData.IsActive = project.isActive !== undefined ? project.isActive : true;
 
-  // ✅ معالجة التقنيات
   if (project.technologies && Array.isArray(project.technologies)) {
     formData.TechnologyIds = project.technologies.map(t => t.id || t);
   } else {
     formData.TechnologyIds = [];
   }
 
+  // ✅ تحميل الصور الموجودة لضمان إرسالها مرة أخرى عند التعديل
+  if (project.projectImages && Array.isArray(project.projectImages)) {
+    formData.ProjectImages = project.projectImages.map(img => ({
+      ImageUrl: img.imageUrl,
+      Caption: img.caption,
+      DisplayOrder: img.displayOrder
+    }));
+  } else {
+    formData.ProjectImages = [];
+  }
+
   formData.ClientName = project.clientName || '';
   formData.ClientFeedback = project.clientFeedback || '';
   formData.Rating = project.rating || null;
   formData.Status = project.status || '';
-
-  console.log('✅ Form data loaded:', formData);
 };
 
 onMounted(async () => {
-  console.log('📌 ProjectEdit mounted with ID:', projectId);
   pageLoading.value = true;
-
   try {
-    // 1. تحميل التقنيات أولاً
     await technologiesStore.fetchTechnologies();
-    console.log('✅ Technologies loaded:', technologies.value.length);
-
-    // 2. تحميل بيانات المشروع
-    console.log('🔄 Fetching project by ID:', projectId);
     const project = await projectsStore.fetchProjectById(projectId);
-
-    if (!project) {
-      throw new Error('المشروع غير موجود');
-    }
-
-    console.log('✅ Project fetched successfully:', project);
+    if (!project) throw new Error('المشروع غير موجود');
     loadProjectData(project);
-
   } catch (err) {
     console.error('❌ Error loading project:', err);
     error(err.message || 'فشل في تحميل بيانات المشروع.');
@@ -481,31 +475,52 @@ onMounted(async () => {
   }
 });
 
-
-
 const handleSubmit = async () => {
   loading.value = true;
 
   try {
-    // تنظيف التاريخ الفارغ
     if (formData.EndDate === '') {
       formData.EndDate = null;
     }
 
-    console.log('📤 Submitting project update:', formData);
+    // ✅ بناء Payload نظيف بدلاً من إرسال formData مباشرة
+    // هذا يضمن تطابق الهيكل مع DTO في السيرفر
+    const payload = {
+      Id: projectId, // بعض السيرفرات تطلب الـ Id داخل الجسم أيضاً
+      Title: formData.Title,
+      ShortDescription: formData.ShortDescription,
+      FullDescription: formData.FullDescription,
+      ProjectType: formData.ProjectType,
+      ThumbnailUrl: formData.ThumbnailUrl,
+      GithubUrl: formData.GithubUrl,
+      LiveDemoUrl: formData.LiveDemoUrl,
+      YouTubeVideoUrl: formData.YouTubeVideoUrl,
+      StartDate: formData.StartDate,
+      EndDate: formData.EndDate,
+      IsFeatured: formData.IsFeatured,
+      IsActive: formData.IsActive,
+      DisplayOrder: formData.DisplayOrder,
+      TechnologyIds: formData.TechnologyIds,
+      // ✅ إرسال الصور (حتى لو كانت فارغة لتجنب NullReference)
+      ProjectImages: formData.ProjectImages.map(img => ({
+        ImageUrl: img.ImageUrl,
+        Caption: img.Caption,
+        DisplayOrder: img.DisplayOrder
+      })),
+      ClientName: formData.ClientName,
+      ClientFeedback: formData.ClientFeedback,
+      Rating: formData.Rating
+    };
 
-    await projectsStore.updateProject(projectId, formData);
+    console.log('📤 Submitting Clean Payload:', payload);
+
+    await projectsStore.updateProject(projectId, payload);
     success('تم تحديث المشروع بنجاح!');
     router.push('/projects');
 
   } catch (err) {
     console.error('❌ Error updating project:', err);
-
-    // ✅ لا نعرض رسالة خطأ إذا كان Guest
-    if (err.message === 'GUEST_ACTION_BLOCKED') {
-      console.log('🚫 Guest action blocked - no error message shown');
-    } else {
-      // ✅ نعرض رسالة خطأ فقط للأخطاء الحقيقية
+    if (err.message !== 'GUEST_ACTION_BLOCKED') {
       error(err.message || 'فشل في تحديث المشروع.');
     }
   } finally {
